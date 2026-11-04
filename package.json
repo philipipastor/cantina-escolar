@@ -1,0 +1,30 @@
+{
+  "name": "cantina",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Sistema de gestão de cantinas escolares",
+  "workspaces": [
+    "api"
+  ],
+  "engines": {
+    "node": ">=22.12"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
+    "dev": "npm run dev -w api",
+    "build": "npm run build -w api",
+    "test": "npm test -w api",
+    "typecheck": "npm run typecheck -w api",
+    "lint": "eslint .",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.0",
+    "eslint": "^10.14.0",
+    "prettier": "^3.9.10",
+    "typescript": "~5.9.0",
+    "typescript-eslint": "^8.72.1"
+  },
+  "type": "module"
+}
