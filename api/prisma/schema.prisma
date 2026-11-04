@@ -1,0 +1,183 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  ADMIN
+  EMPLOYEE
+}
+
+enum EntryType {
+  PURCHASE
+  PAYMENT
+  OPENING_BALANCE
+  CREDIT_REFUND
+  REVERSAL
+}
+
+enum PaymentMethod {
+  CASH
+  PIX
+  CARD
+}
+
+enum ConsumerType {
+  CHILD
+  ACCOUNT_HOLDER
+  UNIDENTIFIED
+}
+
+model Canteen {
+  id   String @id @default(uuid())
+  name String
+
+  users    User[]
+  clients  Client[]
+  children Child[]
+  products Product[]
+  entries  Entry[]
+  items    PurchaseItem[]
+}
+
+model User {
+  id           String   @id @default(uuid())
+  username     String   @unique
+  name         String
+  password     String
+  role         Role
+  canteenId    String?
+  isActive     Boolean  @default(true)
+  // Aumenta ao trocar a senha: os tokens emitidos antes deixam de valer.
+  tokenVersion Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  canteen Canteen? @relation(fields: [canteenId], references: [id], onDelete: Restrict)
+  entries Entry[]
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  canteenId String
+  name      String
+  phone     String?
+  notes     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  canteen  Canteen @relation(fields: [canteenId], references: [id], onDelete: Restrict)
+  children Child[]
+  entries  Entry[]
+
+  // Alvo das chaves estrangeiras compostas que impedem vínculos entre cantinas.
+  @@unique([id, canteenId])
+  @@index([canteenId, name])
+}
+
+model Child {
+  id        String   @id @default(uuid())
+  canteenId String
+  clientId  String
+  name      String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  canteen Canteen @relation(fields: [canteenId], references: [id], onDelete: Restrict)
+  client  Client  @relation(fields: [clientId, canteenId], references: [id, canteenId], onDelete: Restrict)
+  entries Entry[]
+
+  @@unique([id, clientId])
+  @@index([canteenId, name])
+  @@index([clientId])
+}
+
+model Product {
+  id         String   @id @default(uuid())
+  canteenId  String
+  name       String
+  priceCents Int
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  canteen Canteen        @relation(fields: [canteenId], references: [id], onDelete: Restrict)
+  items   PurchaseItem[]
+
+  @@unique([id, canteenId])
+  @@index([canteenId, name])
+}
+
+/// Livro-razão imutável: o saldo da conta é sempre a soma de `amountCents`.
+/// Valor positivo aumenta o saldo (crédito); negativo reduz (dívida).
+model Entry {
+  id             String         @id @default(uuid())
+  canteenId      String
+  clientId       String
+  userId         String
+  type           EntryType
+  amountCents    Int
+  /// Dia em que o consumo ou pagamento aconteceu; pode ser anterior ao registro.
+  referenceDate  DateTime       @db.Date
+  /// Momento real do lançamento, para auditoria.
+  recordedAt     DateTime       @default(now())
+  paymentMethod  PaymentMethod?
+  consumerType   ConsumerType?
+  childId        String?
+  description    String?
+  reason         String?
+  reversesId     String?
+  redoneFromId   String?
+  idempotencyKey String
+  requestHash    String
+
+  canteen Canteen @relation(fields: [canteenId], references: [id], onDelete: Restrict)
+  client  Client  @relation(fields: [clientId, canteenId], references: [id, canteenId], onDelete: Restrict)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Restrict)
+  child   Child?  @relation(fields: [childId, clientId], references: [id, clientId], onDelete: Restrict)
+
+  /// Um estorno pertence à mesma conta do lançamento estornado.
+  reverses   Entry? @relation("Reversal", fields: [reversesId, clientId], references: [id, clientId], onDelete: Restrict)
+  reversedBy Entry? @relation("Reversal")
+
+  /// Um lançamento refeito pode ir para outra conta, mas nunca para outra cantina.
+  redoneFrom Entry? @relation("Redo", fields: [redoneFromId, canteenId], references: [id, canteenId], onDelete: Restrict)
+  redoneAs   Entry? @relation("Redo")
+
+  items PurchaseItem[]
+
+  @@unique([id, clientId])
+  @@unique([id, canteenId])
+  // Como `id` é único, estes pares garantem um único estorno e um único refazer por lançamento.
+  @@unique([reversesId, clientId])
+  @@unique([redoneFromId, canteenId])
+  @@unique([canteenId, idempotencyKey])
+  @@index([clientId, referenceDate])
+  @@index([canteenId, referenceDate])
+  @@index([canteenId, type, recordedAt])
+}
+
+model PurchaseItem {
+  id             String  @id @default(uuid())
+  canteenId      String
+  entryId        String
+  /// Vazio em item avulso.
+  productId      String?
+  /// Nome praticado na venda, preservado mesmo se o produto mudar.
+  description    String
+  quantity       Int
+  /// Preço praticado na venda, preservado mesmo se o produto mudar.
+  unitPriceCents Int
+
+  canteen Canteen  @relation(fields: [canteenId], references: [id], onDelete: Restrict)
+  entry   Entry    @relation(fields: [entryId, canteenId], references: [id, canteenId], onDelete: Restrict)
+  product Product? @relation(fields: [productId, canteenId], references: [id, canteenId], onDelete: Restrict)
+
+  @@index([entryId])
+  @@index([productId])
+}
