@@ -1,0 +1,47 @@
+@import "@fontsource-variable/inter";
+@import "tailwindcss";
+
+/*
+ * Tokens extraídos do Figma. Os componentes usam só estes nomes (bg-primary, text-muted, rounded-card...),
+ * nunca valores soltos: se uma cor mudar no design, muda aqui e vale para o sistema inteiro.
+ */
+@theme {
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+
+  --color-primary: #d92d3b;
+  --color-primary-soft: #fff0f1;
+  --color-primary-tint: #ffe7eb;
+  --color-ink: #202329;
+  --color-muted: #737881;
+  --color-line: #e8eaee;
+  --color-page: #f7f8fa;
+  --color-surface: #ffffff;
+
+  /* Tamanhos de texto do Figma. Todos usam altura de linha de 140%. */
+  --text-title: 27px;
+  --text-title--line-height: 1.4;
+  --text-amount: 26px;
+  --text-amount--line-height: 1.4;
+  --text-section: 15px;
+  --text-section--line-height: 1.4;
+  --text-body: 14px;
+  --text-body--line-height: 1.4;
+  --text-small: 13px;
+  --text-small--line-height: 1.4;
+  --text-caption: 12px;
+  --text-caption--line-height: 1.4;
+
+  --radius-field: 12px;
+  --radius-card: 16px;
+  --radius-brand: 8px;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-page font-sans text-body text-ink antialiased;
+  }
+}

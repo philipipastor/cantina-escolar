@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "description": "Sistema de gestão de cantinas escolares",
   "workspaces": [
-    "api"
+    "api",
+    "web"
   ],
   "engines": {
     "node": ">=22.12"
@@ -13,11 +14,12 @@
     "db:up": "docker compose up -d --wait",
     "db:down": "docker compose down",
     "dev": "npm run dev -w api",
-    "build": "npm run build -w api",
+    "build": "npm run build -w api && npm run build -w web",
     "test": "npm test -w api",
-    "typecheck": "npm run typecheck -w api",
+    "typecheck": "npm run typecheck -w api && npm run typecheck -w web",
     "lint": "eslint .",
-    "format": "prettier --write ."
+    "format": "prettier --write .",
+    "dev:web": "npm run dev -w web"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.0",

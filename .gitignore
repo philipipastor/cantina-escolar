@@ -7,3 +7,4 @@ coverage/
 *.log
 *.fig
 .DS_Store
+.claude/
