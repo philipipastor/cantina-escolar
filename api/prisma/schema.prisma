@@ -32,8 +32,9 @@ enum ConsumerType {
 }
 
 model Canteen {
-  id   String @id @default(uuid())
-  name String
+  id       String  @id @default(uuid())
+  name     String
+  isActive Boolean @default(true)
 
   users    User[]
   clients  Client[]

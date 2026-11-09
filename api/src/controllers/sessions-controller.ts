@@ -12,11 +12,15 @@ const dummyHash = hashSync(randomBytes(32).toString("hex"), 10)
 export class SessionsController {
   async create(request: Request, response: Response) {
     const { username, password } = createSessionSchema.parse(request.body)
-    const user = await prisma.user.findUnique({ where: { username } })
+    const user = await prisma.user.findUnique({ where: { username }, include: { canteen: true } })
 
     const isPasswordCorrect = await compare(password, user?.password ?? dummyHash)
     if (!user || !isPasswordCorrect || !user.isActive) {
       throw new AppError("Usuário ou senha incorretos", 401)
+    }
+    // A mensagem só aparece com a senha correta, então não revela nada a quem não sabe a senha.
+    if (user.canteen && !user.canteen.isActive) {
+      throw new AppError("Sua cantina está inativa. Fale com o administrador.", 403, "CANTEEN_INACTIVE")
     }
 
     return response.json({

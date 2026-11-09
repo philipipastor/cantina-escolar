@@ -1,7 +1,7 @@
 import type { Request, Response } from "express"
 import { Role } from "@prisma/client"
 import { prisma } from "../prisma"
-import { canteenSchema } from "../schemas/canteens-schema"
+import { createCanteenSchema, updateCanteenSchema } from "../schemas/canteens-schema"
 import { idParamsSchema } from "../schemas/shared-schema"
 import { AppError } from "../utils/AppError"
 
@@ -13,34 +13,35 @@ async function ensureNameIsFree(name: string, ignoredId?: string) {
 }
 
 export class CanteensController {
-  // Cada usuário vê só as cantinas a que tem acesso.
+  // O administrador vê todas, inclusive as inativas; o funcionário vê só a própria, se estiver ativa.
   async index(request: Request, response: Response) {
     const { role, canteenId } = request.user!
     const canteens = await prisma.canteen.findMany({
-      where: role === Role.ADMIN ? {} : { id: canteenId ?? "" },
-      orderBy: { name: "asc" },
+      where: role === Role.ADMIN ? {} : { id: canteenId ?? "", isActive: true },
+      orderBy: [{ isActive: "desc" }, { name: "asc" }],
     })
     return response.json({ canteens })
   }
 
   async create(request: Request, response: Response) {
-    const { name } = canteenSchema.parse(request.body)
+    const { name } = createCanteenSchema.parse(request.body)
     await ensureNameIsFree(name)
 
     const canteen = await prisma.canteen.create({ data: { name } })
     return response.status(201).json({ canteen })
   }
 
+  // Renomeia, inativa ou reativa. Inativar não apaga nada: os dados continuam disponíveis para consulta.
   async update(request: Request, response: Response) {
     const { id } = idParamsSchema.parse(request.params)
-    const { name } = canteenSchema.parse(request.body)
+    const data = updateCanteenSchema.parse(request.body)
 
     if (!(await prisma.canteen.findUnique({ where: { id } }))) {
       throw new AppError("Cantina não encontrada", 404)
     }
-    await ensureNameIsFree(name, id)
+    if (data.name) await ensureNameIsFree(data.name, id)
 
-    const canteen = await prisma.canteen.update({ where: { id }, data: { name } })
+    const canteen = await prisma.canteen.update({ where: { id }, data })
     return response.json({ canteen })
   }
 }

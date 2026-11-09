@@ -15,6 +15,7 @@ import { signToken } from "../utils/token"
 async function ensureCanteenExists(canteenId: string) {
   const canteen = await prisma.canteen.findUnique({ where: { id: canteenId } })
   if (!canteen) throw new AppError("Cantina não encontrada", 404)
+  if (!canteen.isActive) throw new AppError("Esta cantina está inativa", 400, "CANTEEN_INACTIVE")
 }
 
 export class UsersController {
