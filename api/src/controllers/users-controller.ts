@@ -10,7 +10,7 @@ import {
 } from "../schemas/users-schema"
 import { AppError } from "../utils/AppError"
 import { userSelect } from "../utils/presenters"
-import { signToken } from "../utils/token"
+import { setSessionCookie } from "../utils/session-cookie"
 
 async function ensureCanteenExists(canteenId: string) {
   const canteen = await prisma.canteen.findUnique({ where: { id: canteenId } })
@@ -77,7 +77,7 @@ export class UsersController {
     return response.json({ user })
   }
 
-  // Devolve um token novo: este aparelho continua conectado e os demais perdem o acesso.
+  // Grava um cookie novo: este aparelho continua conectado e os demais perdem o acesso.
   async changeMyPassword(request: Request, response: Response) {
     const { currentPassword, newPassword } = changePasswordSchema.parse(request.body)
     const { id } = request.user!
@@ -91,6 +91,7 @@ export class UsersController {
       where: { id },
       data: { password: await hash(newPassword, 10), tokenVersion: { increment: 1 } },
     })
-    return response.json({ token: signToken(user) })
+    setSessionCookie(response, user)
+    return response.status(204).send()
   }
 }

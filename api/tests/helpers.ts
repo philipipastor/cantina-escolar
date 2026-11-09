@@ -2,7 +2,9 @@ import { randomUUID } from "node:crypto"
 import { hash } from "bcryptjs"
 import request from "supertest"
 import { app } from "../src/app"
+import { APP_HEADER, APP_HEADER_VALUE } from "../src/middlewares/require-app-header"
 import { prisma } from "../src/prisma"
+import { SESSION_COOKIE } from "../src/utils/session-cookie"
 
 export const PASSWORD = "test-password-123"
 
@@ -41,20 +43,36 @@ export async function resetDatabase() {
   return { canteenA: canteenA.id, canteenB: canteenB.id }
 }
 
-export function authenticated(token: string) {
-  const header = `Bearer ${token}`
+// Simula as telas: envia o cabeçalho exigido contra CSRF e, quando houver, o cookie de sessão.
+function client(token?: string) {
+  const prepare = (test: request.Test) => {
+    test.set(APP_HEADER, APP_HEADER_VALUE)
+    if (token) test.set("Cookie", `${SESSION_COOKIE}=${token}`)
+    return test
+  }
   return {
-    get: (url: string) => request(app).get(url).set("Authorization", header),
-    post: (url: string) => request(app).post(url).set("Authorization", header),
-    patch: (url: string) => request(app).patch(url).set("Authorization", header),
+    get: (url: string) => prepare(request(app).get(url)),
+    post: (url: string) => prepare(request(app).post(url)),
+    patch: (url: string) => prepare(request(app).patch(url)),
+    delete: (url: string) => prepare(request(app).delete(url)),
   }
 }
 
-export type Api = ReturnType<typeof authenticated>
+export const authenticated = (token: string) => client(token)
+export const anonymous = () => client()
+
+export type Api = ReturnType<typeof client>
+
+// Lê o token do cookie gravado pela resposta, como o navegador faria.
+export function sessionTokenFrom(response: request.Response) {
+  const cookies = ([] as string[]).concat(response.headers["set-cookie"] ?? [])
+  const session = cookies.find((cookie) => cookie.startsWith(`${SESSION_COOKIE}=`))
+  return session?.split(";")[0].slice(SESSION_COOKIE.length + 1) ?? ""
+}
 
 export async function signIn(username: string, password = PASSWORD) {
-  const { body } = await request(app).post("/sessions").send({ username, password }).expect(200)
-  return authenticated(body.token)
+  const response = await anonymous().post("/sessions").send({ username, password }).expect(200)
+  return authenticated(sessionTokenFrom(response))
 }
 
 export const key = () => randomUUID()

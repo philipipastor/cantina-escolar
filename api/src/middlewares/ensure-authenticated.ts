@@ -3,19 +3,14 @@ import { verify } from "jsonwebtoken"
 import { authConfig } from "../configs/auth"
 import { prisma } from "../prisma"
 import { AppError } from "../utils/AppError"
+import { SESSION_COOKIE } from "../utils/session-cookie"
 
 type JwtPayload = { sub: string; tokenVersion: number }
 
 export async function ensureAuthenticated(request: Request, _response: Response, next: NextFunction) {
-  const authorization = request.headers.authorization
-
-  if (!authorization) {
-    throw new AppError("Token não informado", 401)
-  }
-
-  const [type, token] = authorization.split(" ")
-  if (type !== "Bearer" || !token) {
-    throw new AppError("Token inválido", 401)
+  const token: unknown = request.cookies?.[SESSION_COOKIE]
+  if (typeof token !== "string" || !token) {
+    throw new AppError("Faça login para continuar", 401)
   }
 
   let payload: JwtPayload

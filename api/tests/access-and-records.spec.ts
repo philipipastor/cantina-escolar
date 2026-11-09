@@ -4,6 +4,7 @@ import { app } from "../src/app"
 import { authConfig } from "../src/configs/auth"
 import { prisma } from "../src/prisma"
 import {
+  anonymous,
   authenticated,
   createClient,
   createProduct,
@@ -12,6 +13,7 @@ import {
   paymentBody,
   purchaseBody,
   resetDatabase,
+  sessionTokenFrom,
   signIn,
 } from "./helpers"
 
@@ -26,25 +28,59 @@ afterAll(() => prisma.$disconnect())
 
 describe("login", () => {
   it("recusa senha errada e usuário inexistente com a mesma resposta", async () => {
-    const wrong = await request(app)
+    const wrong = await anonymous()
       .post("/sessions")
       .send({ username: "emp_a", password: "wrong-123" })
       .expect(401)
-    const missing = await request(app)
+    const missing = await anonymous()
       .post("/sessions")
       .send({ username: "nobody", password: "wrong-123" })
       .expect(401)
     expect(wrong.body).toEqual(missing.body)
+    expect(wrong.headers["set-cookie"]).toBeUndefined()
   })
 
-  it("devolve o token e não devolve a senha", async () => {
-    const { body } = await request(app)
+  it("grava a sessão em cookie httpOnly e não devolve token nem senha no corpo", async () => {
+    const response = await anonymous()
       .post("/sessions")
       .send({ username: "EMP_A", password: PASSWORD })
       .expect(200)
-    expect(body.token).toEqual(expect.any(String))
-    expect(body.user).toMatchObject({ username: "emp_a", role: "EMPLOYEE", canteenId: canteenA })
-    expect(JSON.stringify(body)).not.toContain("password")
+
+    const cookie = ([] as string[]).concat(response.headers["set-cookie"] ?? []).join(";")
+    expect(cookie).toContain("cantina_session=")
+    expect(cookie).toMatch(/HttpOnly/i)
+    expect(cookie).toMatch(/SameSite=Lax/i)
+    expect(cookie).toMatch(/Expires=/i)
+
+    expect(response.body.user).toMatchObject({ username: "emp_a", role: "EMPLOYEE", canteenId: canteenA })
+    expect(response.body.token).toBeUndefined()
+    expect(JSON.stringify(response.body)).not.toContain("password")
+  })
+
+  it("sair apaga o cookie", async () => {
+    const response = await anonymous().delete("/sessions").expect(204)
+    const cookie = ([] as string[]).concat(response.headers["set-cookie"] ?? []).join(";")
+    expect(cookie).toMatch(/cantina_session=;/)
+    expect(cookie).toMatch(/Expires=Thu, 01 Jan 1970/)
+  })
+
+  it("recusa alterações sem o cabeçalho das telas, mesmo com sessão válida (CSRF)", async () => {
+    const employee = await signIn("emp_a")
+    const response = await employee.post(`/canteens/${canteenA}/clients`).send({ name: "Maria" }).expect(201)
+    expect(response.body.client.name).toBe("Maria")
+
+    const login = await anonymous().post("/sessions").send({ username: "emp_a", password: PASSWORD })
+    const token = sessionTokenFrom(login)
+    const forged = await request(app)
+      .post(`/canteens/${canteenA}/clients`)
+      .set("Cookie", `cantina_session=${token}`)
+      .send({ name: "Invasor" })
+      .expect(403)
+    expect(forged.body.code).toBe("INVALID_ORIGIN")
+    await request(app).post("/sessions").send({ username: "emp_a", password: PASSWORD }).expect(403)
+
+    // Leitura continua liberada, porque não altera nada.
+    await request(app).get("/users/me").set("Cookie", `cantina_session=${token}`).expect(200)
   })
 
   it("exige token nas rotas protegidas e recusa token inválido", async () => {
@@ -62,21 +98,21 @@ describe("login", () => {
     await authenticated(forged).get("/users/me").expect(401)
   })
 
-  it("trocar a senha exige a atual, derruba os outros aparelhos e devolve um token novo", async () => {
+  it("trocar a senha exige a atual, derruba os outros aparelhos e grava um cookie novo", async () => {
     const phone = await signIn("emp_a")
 
     await phone
       .patch("/users/me/password")
       .send({ currentPassword: "wrong-123", newPassword: "new-password-123" })
       .expect(400)
-    const { body } = await phone
+    const response = await phone
       .patch("/users/me/password")
       .send({ currentPassword: PASSWORD, newPassword: "new-password-123" })
-      .expect(200)
+      .expect(204)
 
     await phone.get("/users/me").expect(401)
-    await authenticated(body.token).get("/users/me").expect(200)
-    await request(app).post("/sessions").send({ username: "emp_a", password: "new-password-123" }).expect(200)
+    await authenticated(sessionTokenFrom(response)).get("/users/me").expect(200)
+    await anonymous().post("/sessions").send({ username: "emp_a", password: "new-password-123" }).expect(200)
   })
 })
 
@@ -210,7 +246,7 @@ describe("administrador", () => {
     await admin.patch(`/users/${id}`).send({ isActive: false }).expect(200)
 
     await employee.get("/users/me").expect(401)
-    await request(app).post("/sessions").send({ username: "emp_a", password: PASSWORD }).expect(401)
+    await anonymous().post("/sessions").send({ username: "emp_a", password: PASSWORD }).expect(401)
   })
 
   it("trocar o funcionário de cantina muda o acesso na hora", async () => {
@@ -238,7 +274,7 @@ describe("administrador", () => {
     await admin.patch(`/users/${id}/password`).send({ newPassword: "redefined-123" }).expect(204)
 
     await employee.get("/users/me").expect(401)
-    await request(app).post("/sessions").send({ username: "emp_a", password: "redefined-123" }).expect(200)
+    await anonymous().post("/sessions").send({ username: "emp_a", password: "redefined-123" }).expect(200)
   })
 })
 

@@ -17,3 +17,4 @@ const loginLimit = rateLimit({
 })
 
 sessionsRoutes.post("/", loginLimit, controller.create)
+sessionsRoutes.delete("/", controller.remove)
