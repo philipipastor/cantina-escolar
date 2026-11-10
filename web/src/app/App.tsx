@@ -4,6 +4,7 @@ import { OfflineScreen } from "../components/layout/OfflineScreen"
 import { AuthProvider } from "../features/auth/AuthContext"
 import { ChangePasswordPage } from "../features/auth/pages/ChangePasswordPage"
 import { LoginPage } from "../features/auth/pages/LoginPage"
+import { CanteensPage } from "../features/canteens/pages/CanteensPage"
 import { useOnlineStatus } from "../hooks/useOnlineStatus"
 import { ProtectedRoute } from "./ProtectedRoute"
 import { TemporaryHome } from "./TemporaryHome"
@@ -22,6 +23,9 @@ export function App() {
             <Route element={<AppLayout />}>
               {/* Tela inicial provisória até o Dashboard ficar pronto. */}
               <Route path="/" element={<TemporaryHome />} />
+              <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
+                <Route path="/empresas" element={<CanteensPage />} />
+              </Route>
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
