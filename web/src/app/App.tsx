@@ -6,6 +6,10 @@ import { ChangePasswordPage } from "../features/auth/pages/ChangePasswordPage"
 import { LoginPage } from "../features/auth/pages/LoginPage"
 import { CanteenGate } from "../features/canteens/CanteenContext"
 import { CanteensPage } from "../features/canteens/pages/CanteensPage"
+import { ClientReportPage } from "../features/clients/pages/ClientReportPage"
+import { ClientsPage } from "../features/clients/pages/ClientsPage"
+import { EditClientPage } from "../features/clients/pages/EditClientPage"
+import { NewClientPage } from "../features/clients/pages/NewClientPage"
 import { EditProductPage } from "../features/products/pages/EditProductPage"
 import { NewProductPage } from "../features/products/pages/NewProductPage"
 import { ProductsPage } from "../features/products/pages/ProductsPage"
@@ -34,6 +38,10 @@ export function App() {
                 <Route path="/produtos" element={<ProductsPage />} />
                 <Route path="/produtos/novo" element={<NewProductPage />} />
                 <Route path="/produtos/:id/editar" element={<EditProductPage />} />
+                <Route path="/clientes" element={<ClientsPage />} />
+                <Route path="/clientes/novo" element={<NewClientPage />} />
+                <Route path="/clientes/:id" element={<ClientReportPage />} />
+                <Route path="/clientes/:id/editar" element={<EditClientPage />} />
               </Route>
             </Route>
           </Route>
