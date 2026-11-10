@@ -12,6 +12,7 @@ import {
 import { idParamsSchema, toLikeTerm } from "../schemas/shared-schema"
 import { AppError } from "../utils/AppError"
 import { describeBalance } from "../utils/balance"
+import { formatDate } from "../utils/dates"
 import { getAccountBalance } from "../utils/entries"
 import { entryInclude, presentClient, presentEntry } from "../utils/presenters"
 
@@ -25,27 +26,43 @@ async function findClient(canteenId: string, id: string) {
 }
 
 export class ClientsController {
-  // Busca a conta pelo nome do responsável ou de qualquer filho, sem diferenciar acentos.
+  // Busca a conta pelo nome do responsável, telefone ou filho, sem diferenciar acentos, e filtra por saldo.
   async index(request: Request, response: Response) {
     const { canteenId } = request.params
-    const { search, active, page, perPage } = listClientsSchema.parse(request.query)
+    const { search, active, status, page, perPage } = listClientsSchema.parse(request.query)
     const term = toLikeTerm(search)
+    // Telefone é comparado só pelos dígitos: "(11) 9999" e "119999" encontram o mesmo cliente.
+    const digits = search?.replace(/\D/g, "")
+    const phoneTerm = digits ? toLikeTerm(digits) : null
 
-    const rows = await prisma.$queryRaw<{ id: string; balance: bigint; total: bigint }[]>`
-      SELECT c."id",
-             COALESCE((SELECT SUM(e."amountCents") FROM "Entry" e WHERE e."clientId" = c."id"), 0)::bigint AS "balance",
-             COUNT(*) OVER()::bigint AS "total"
-      FROM "Client" c
-      WHERE c."canteenId" = ${canteenId}
-        AND c."isActive" = ${active}
-        AND (
-          unaccent(c."name") ILIKE unaccent(${term}::text)
-          OR EXISTS (
-            SELECT 1 FROM "Child" ch
-            WHERE ch."clientId" = c."id" AND ch."isActive" AND unaccent(ch."name") ILIKE unaccent(${term}::text)
+    const rows = await prisma.$queryRaw<
+      { id: string; balance: bigint; lastPurchaseDate: Date | null; total: bigint }[]
+    >`
+      SELECT "id", "balance", "lastPurchaseDate", COUNT(*) OVER()::bigint AS "total"
+      FROM (
+        SELECT c."id",
+               lower(unaccent(c."name")) AS "sortName",
+               COALESCE((SELECT SUM(e."amountCents") FROM "Entry" e WHERE e."clientId" = c."id"), 0)::bigint AS "balance",
+               (SELECT MAX(e."referenceDate") FROM "Entry" e
+                WHERE e."clientId" = c."id" AND e."type" = 'PURCHASE'
+                  AND NOT EXISTS (SELECT 1 FROM "Entry" r WHERE r."reversesId" = e."id")) AS "lastPurchaseDate"
+        FROM "Client" c
+        WHERE c."canteenId" = ${canteenId}
+          AND c."isActive" = ${active}
+          AND (
+            unaccent(c."name") ILIKE unaccent(${term}::text)
+            OR (${phoneTerm}::text IS NOT NULL
+                AND regexp_replace(COALESCE(c."phone", ''), '[^0-9]', '', 'g') LIKE ${phoneTerm}::text)
+            OR EXISTS (
+              SELECT 1 FROM "Child" ch
+              WHERE ch."clientId" = c."id" AND ch."isActive" AND unaccent(ch."name") ILIKE unaccent(${term}::text)
+            )
           )
-        )
-      ORDER BY lower(unaccent(c."name")), c."id"
+      ) accounts
+      WHERE ${status ?? null}::text IS NULL
+         OR (${status ?? null}::text = 'DEBT' AND "balance" < 0)
+         OR (${status ?? null}::text = 'CREDIT' AND "balance" > 0)
+      ORDER BY "sortName", "id"
       LIMIT ${perPage} OFFSET ${(page - 1) * perPage}`
 
     const clients = await prisma.client.findMany({
@@ -55,7 +72,10 @@ export class ClientsController {
     const clientsById = new Map(clients.map((client) => [client.id, client]))
 
     return response.json({
-      clients: rows.map((row) => presentClient(clientsById.get(row.id)!, Number(row.balance))),
+      clients: rows.map((row) => ({
+        ...presentClient(clientsById.get(row.id)!, Number(row.balance)),
+        lastPurchaseDate: row.lastPurchaseDate ? formatDate(row.lastPurchaseDate) : null,
+      })),
       total: Number(rows[0]?.total ?? 0),
       page,
       perPage,

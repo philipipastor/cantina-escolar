@@ -4,6 +4,7 @@ import { activeQueryField, idField, optionalText, paginationSchema, requiredText
 export const listClientsSchema = paginationSchema.extend({
   search: z.string().trim().max(100).optional(),
   active: activeQueryField,
+  status: z.enum(["DEBT", "CREDIT"]).optional(),
 })
 
 export const createClientSchema = z
