@@ -10,6 +10,9 @@ import { ClientReportPage } from "../features/clients/pages/ClientReportPage"
 import { ClientsPage } from "../features/clients/pages/ClientsPage"
 import { EditClientPage } from "../features/clients/pages/EditClientPage"
 import { NewClientPage } from "../features/clients/pages/NewClientPage"
+import { PaymentConfirmedPage } from "../features/payments/pages/PaymentConfirmedPage"
+import { ReceivePaymentPage } from "../features/payments/pages/ReceivePaymentPage"
+import { RefundCreditPage } from "../features/payments/pages/RefundCreditPage"
 import { EditProductPage } from "../features/products/pages/EditProductPage"
 import { NewProductPage } from "../features/products/pages/NewProductPage"
 import { ProductsPage } from "../features/products/pages/ProductsPage"
@@ -37,13 +40,16 @@ export function App() {
                 <Route path="/empresas" element={<CanteensPage />} />
               </Route>
               <Route element={<CanteenGate />}>
-                <Route path="/produtos" element={<ProductsPage />} />
-                <Route path="/produtos/novo" element={<NewProductPage />} />
-                <Route path="/produtos/:id/editar" element={<EditProductPage />} />
                 <Route path="/clientes" element={<ClientsPage />} />
                 <Route path="/clientes/novo" element={<NewClientPage />} />
                 <Route path="/clientes/:id" element={<ClientReportPage />} />
                 <Route path="/clientes/:id/editar" element={<EditClientPage />} />
+                <Route path="/clientes/:id/devolver-credito" element={<RefundCreditPage />} />
+                <Route path="/pagamento" element={<ReceivePaymentPage />} />
+                <Route path="/pagamento/confirmado" element={<PaymentConfirmedPage />} />
+                <Route path="/produtos" element={<ProductsPage />} />
+                <Route path="/produtos/novo" element={<NewProductPage />} />
+                <Route path="/produtos/:id/editar" element={<EditProductPage />} />
                 <Route path="/venda" element={<NewSalePage />} />
                 <Route path="/venda/confirmada" element={<SaleConfirmedPage />} />
               </Route>
