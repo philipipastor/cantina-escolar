@@ -1,0 +1,30 @@
+# API da cantina no Render (Blueprint). O banco fica no Neon; as telas, na Vercel.
+services:
+  - type: web
+    name: cantina-api
+    runtime: node
+    plan: free
+    # O projeto usa npm workspaces: instala na raiz e compila só a API.
+    # --include=dev porque o TypeScript e o Prisma CLI são dependências de desenvolvimento.
+    buildCommand: npm ci --include=dev && npm run build -w api
+    # Aplica as migrações pendentes antes de subir; se não houver nenhuma, não faz nada.
+    startCommand: npm run prisma:deploy -w api && npm run start -w api
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # Gerado pelo Render: valor longo e aleatório, nunca vai para o git.
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      # Vercel na frente do Render: dois proxies até a API. Serve para o limite de tentativas de
+      # login enxergar o IP de quem está entrando, e não o da Vercel.
+      - key: TRUST_PROXY
+        value: "2"
+      # Preenchidos no painel do Render (sync: false): a URL do Neon e o endereço da Vercel.
+      - key: DATABASE_URL
+        sync: false
+      - key: WEB_ORIGIN
+        sync: false
