@@ -4,6 +4,8 @@ services:
     name: cantina-api
     runtime: node
     plan: free
+    # Mesma região do banco no Neon (AWS US East 2, Ohio): cada tela faz várias consultas ao banco.
+    region: ohio
     # O projeto usa npm workspaces: instala na raiz e compila só a API.
     # --include=dev porque o TypeScript e o Prisma CLI são dependências de desenvolvimento.
     buildCommand: npm ci --include=dev && npm run build -w api
