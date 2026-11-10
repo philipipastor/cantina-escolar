@@ -8,6 +8,7 @@ import { CanteenGate } from "../features/canteens/CanteenContext"
 import { CanteensPage } from "../features/canteens/pages/CanteensPage"
 import { ClientReportPage } from "../features/clients/pages/ClientReportPage"
 import { ClientsPage } from "../features/clients/pages/ClientsPage"
+import { EntryDetailsPage } from "../features/entries/pages/EntryDetailsPage"
 import { EditClientPage } from "../features/clients/pages/EditClientPage"
 import { NewClientPage } from "../features/clients/pages/NewClientPage"
 import { PaymentConfirmedPage } from "../features/payments/pages/PaymentConfirmedPage"
@@ -52,6 +53,7 @@ export function App() {
                 <Route path="/produtos/:id/editar" element={<EditProductPage />} />
                 <Route path="/venda" element={<NewSalePage />} />
                 <Route path="/venda/confirmada" element={<SaleConfirmedPage />} />
+                <Route path="/lancamentos/:id" element={<EntryDetailsPage />} />
               </Route>
             </Route>
           </Route>
