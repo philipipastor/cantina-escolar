@@ -143,11 +143,11 @@ export class ClientsController {
     return response.json({ child })
   }
 
-  // Extrato em ordem cronológica, com o saldo acumulado após cada lançamento.
+  // Extrato em ordem cronológica, com o saldo acumulado após cada lançamento e os totais do período.
   async statement(request: Request, response: Response) {
     const { canteenId } = request.params
     const { id: clientId } = idParamsSchema.parse(request.params)
-    const { page, perPage } = statementQuerySchema.parse(request.query)
+    const { page, perPage, from, to } = statementQuerySchema.parse(request.query)
 
     await findClient(canteenId, clientId)
     const entries = await prisma.entry.findMany({
@@ -156,11 +156,22 @@ export class ClientsController {
       orderBy: [{ referenceDate: "asc" }, { recordedAt: "asc" }, { id: "asc" }],
     })
 
+    // O saldo acumulado considera todo o histórico; só depois o extrato é recortado pelo período.
     let balanceCents = 0
-    const statement = entries.map((entry) => {
-      balanceCents += entry.amountCents
-      return { ...presentEntry(entry), balanceAfterCents: balanceCents }
-    })
+    const statement = entries
+      .map((entry) => {
+        balanceCents += entry.amountCents
+        return { ...presentEntry(entry), balanceAfterCents: balanceCents }
+      })
+      .filter((entry) => (!from || entry.referenceDate >= from) && (!to || entry.referenceDate <= to))
+
+    // Compras e pagamentos estornados não entram nos totais, igual aos painéis.
+    const period = { purchasedCents: 0, paidCents: 0 }
+    for (const entry of statement) {
+      if (entry.isReversed) continue
+      if (entry.type === "PURCHASE") period.purchasedCents += -entry.amountCents
+      if (entry.type === "PAYMENT") period.paidCents += entry.amountCents
+    }
 
     // As páginas contam a partir do lançamento mais recente, mantendo a ordem cronológica em cada uma.
     const end = Math.max(statement.length - (page - 1) * perPage, 0)
@@ -168,6 +179,7 @@ export class ClientsController {
 
     return response.json({
       balance: describeBalance(balanceCents),
+      period,
       entries: statement.slice(start, end),
       total: statement.length,
       page,

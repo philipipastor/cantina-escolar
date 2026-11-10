@@ -73,3 +73,36 @@ describe("lista de clientes para a tela", () => {
     expect(await lastPurchase()).toBe("2026-01-10")
   })
 })
+
+describe("extrato por período", () => {
+  it("recorta o período sem perder o saldo acumulado e soma só o que não foi estornado", async () => {
+    const maria = await createClient(api, canteenA, "Maria")
+    const url = `${base}/clients/${maria.id}/statement`
+    await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(maria.id, 1000, { referenceDate: "2026-01-10" }))
+      .expect(201)
+    await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(maria.id, 2000, { referenceDate: "2026-02-10" }))
+      .expect(201)
+    const reversed = await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(maria.id, 400, { referenceDate: "2026-02-11" }))
+      .expect(201)
+    await api
+      .post(`${base}/payments`)
+      .send(paymentBody(maria.id, 500, { referenceDate: "2026-02-12" }))
+      .expect(201)
+    await api
+      .post(`${base}/entries/${reversed.body.entry.id}/reversal`)
+      .send({ reason: "Lançado errado", idempotencyKey: key() })
+      .expect(201)
+
+    const { body } = await api.get(url).query({ from: "2026-02-01", to: "2026-02-28" }).expect(200)
+    expect(body.entries[0].balanceAfterCents).toBe(-3000)
+    expect(body.period).toEqual({ purchasedCents: 2000, paidCents: 500 })
+
+    await api.get(url).query({ from: "ontem" }).expect(400)
+  })
+})

@@ -1,5 +1,12 @@
 import { z } from "zod"
-import { activeQueryField, idField, optionalText, paginationSchema, requiredText } from "./shared-schema"
+import {
+  activeQueryField,
+  dateField,
+  idField,
+  optionalText,
+  paginationSchema,
+  requiredText,
+} from "./shared-schema"
 
 export const listClientsSchema = paginationSchema.extend({
   search: z.string().trim().max(100).optional(),
@@ -43,4 +50,6 @@ export const childParamsSchema = z.object({ id: idField, childId: idField })
 export const statementQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
   perPage: z.coerce.number().int().min(1).max(200).default(50),
+  from: dateField.optional(),
+  to: dateField.optional(),
 })
