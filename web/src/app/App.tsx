@@ -8,6 +8,7 @@ import { CanteenGate } from "../features/canteens/CanteenContext"
 import { CanteensPage } from "../features/canteens/pages/CanteensPage"
 import { ClientReportPage } from "../features/clients/pages/ClientReportPage"
 import { ClientsPage } from "../features/clients/pages/ClientsPage"
+import { DailySalesPage } from "../features/daily-sales/pages/DailySalesPage"
 import { DashboardPage } from "../features/dashboard/pages/DashboardPage"
 import { EntryDetailsPage } from "../features/entries/pages/EntryDetailsPage"
 import { EditClientPage } from "../features/clients/pages/EditClientPage"
@@ -53,6 +54,7 @@ export function App() {
                 <Route path="/venda" element={<NewSalePage />} />
                 <Route path="/venda/confirmada" element={<SaleConfirmedPage />} />
                 <Route path="/lancamentos/:id" element={<EntryDetailsPage />} />
+                <Route path="/vendas-do-dia" element={<DailySalesPage />} />
               </Route>
             </Route>
           </Route>
