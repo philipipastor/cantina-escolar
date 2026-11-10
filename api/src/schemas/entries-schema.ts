@@ -19,15 +19,8 @@ const consumerField = z.discriminatedUnion("type", [
   z.object({ type: z.literal("UNIDENTIFIED") }),
 ])
 
-const itemField = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("PRODUCT"), productId: idField, quantity: quantityField }),
-  z.object({
-    type: z.literal("CUSTOM"),
-    description: requiredText("a descrição", 200),
-    quantity: quantityField,
-    unitPriceCents: centsField,
-  }),
-])
+// Só se vende produto cadastrado: o preço sempre vem do servidor, nunca de quem envia a compra.
+const itemField = z.object({ productId: idField, quantity: quantityField })
 
 export const purchasePreviewSchema = z.object({
   clientId: idField,

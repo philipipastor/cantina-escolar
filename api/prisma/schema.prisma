@@ -164,20 +164,19 @@ model Entry {
 }
 
 model PurchaseItem {
-  id             String  @id @default(uuid())
+  id             String @id @default(uuid())
   canteenId      String
   entryId        String
-  /// Vazio em item avulso.
-  productId      String?
+  productId      String
   /// Nome praticado na venda, preservado mesmo se o produto mudar.
   description    String
   quantity       Int
   /// Preço praticado na venda, preservado mesmo se o produto mudar.
   unitPriceCents Int
 
-  canteen Canteen  @relation(fields: [canteenId], references: [id], onDelete: Restrict)
-  entry   Entry    @relation(fields: [entryId, canteenId], references: [id, canteenId], onDelete: Restrict)
-  product Product? @relation(fields: [productId, canteenId], references: [id, canteenId], onDelete: Restrict)
+  canteen Canteen @relation(fields: [canteenId], references: [id], onDelete: Restrict)
+  entry   Entry   @relation(fields: [entryId, canteenId], references: [id, canteenId], onDelete: Restrict)
+  product Product @relation(fields: [productId, canteenId], references: [id, canteenId], onDelete: Restrict)
 
   @@index([entryId])
   @@index([productId])

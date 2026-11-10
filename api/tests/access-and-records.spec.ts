@@ -132,7 +132,7 @@ describe("separação entre cantinas", () => {
     const productB = await createProduct(apiB, canteenB, "Produto B", 500)
     const { body: purchaseB } = await apiB
       .post(`/canteens/${canteenB}/purchases`)
-      .send(purchaseBody(clientB.id, 1000))
+      .send(await purchaseBody(clientB.id, 1000))
       .expect(201)
     const a = `/canteens/${canteenA}`
 
@@ -140,7 +140,10 @@ describe("separação entre cantinas", () => {
     await apiA.get(`${a}/clients/${clientB.id}/statement`).expect(404)
     await apiA.patch(`${a}/clients/${clientB.id}`).send({ name: "X" }).expect(404)
     await apiA.patch(`${a}/products/${productB.id}`).send({ priceCents: 1 }).expect(404)
-    await apiA.post(`${a}/purchases`).send(purchaseBody(clientB.id, 500)).expect(404)
+    await apiA
+      .post(`${a}/purchases`)
+      .send(await purchaseBody(clientB.id, 500))
+      .expect(404)
     await apiA.post(`${a}/payments`).send(paymentBody(clientB.id, 500)).expect(404)
     await apiA.get(`${a}/entries/${purchaseB.entry.id}`).expect(404)
     await apiA
@@ -160,7 +163,7 @@ describe("separação entre cantinas", () => {
       .send({
         clientId: clientA.id,
         consumer: { type: "ACCOUNT_HOLDER" },
-        items: [{ type: "PRODUCT", productId: productB.id, quantity: 1 }],
+        items: [{ productId: productB.id, quantity: 1 }],
         idempotencyKey: key(),
       })
       .expect(404)
@@ -204,7 +207,7 @@ describe("administrador", () => {
     const client = await createClient(admin, canteenB)
     const { body } = await admin
       .post(`/canteens/${canteenB}/purchases`)
-      .send(purchaseBody(client.id, 1000))
+      .send(await purchaseBody(client.id, 1000))
       .expect(201)
     expect(body.entry.recordedBy.name).toBe("Admin")
   })
@@ -304,7 +307,10 @@ describe("clientes e busca", () => {
     const api = await signIn("emp_a")
     const client = await createClient(api, canteenA, "Devedora")
     const base = `/canteens/${canteenA}`
-    await api.post(`${base}/purchases`).send(purchaseBody(client.id, 1000)).expect(201)
+    await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(client.id, 1000))
+      .expect(201)
 
     const active = await api.get(`${base}/clients`).expect(200)
     expect(active.body.clients[0].balance.amountOwedCents).toBe(1000)
@@ -344,7 +350,7 @@ describe("produtos", () => {
         .send({
           clientId: client.id,
           consumer: { type: "ACCOUNT_HOLDER" },
-          items: [{ type: "PRODUCT", productId, quantity }],
+          items: [{ productId, quantity }],
           idempotencyKey: key(),
           confirmDuplicate: true,
         })
@@ -377,7 +383,10 @@ describe("painéis e conferência", () => {
     const debtor = await createClient(api, canteenA, "Devedora")
     const withCredit = await createClient(api, canteenA, "Com crédito")
 
-    await api.post(`${base}/purchases`).send(purchaseBody(debtor.id, 3000)).expect(201)
+    await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(debtor.id, 3000))
+      .expect(201)
     await api.post(`${base}/payments`).send(paymentBody(withCredit.id, 5000)).expect(201)
 
     const { body } = await api.get(`${base}/dashboard`).expect(200)
@@ -401,9 +410,12 @@ describe("painéis e conferência", () => {
 
     const { body: purchase } = await apiA
       .post(`/canteens/${canteenA}/purchases`)
-      .send(purchaseBody(clientA.id, 1000))
+      .send(await purchaseBody(clientA.id, 1000))
       .expect(201)
-    await apiB.post(`/canteens/${canteenB}/purchases`).send(purchaseBody(clientB.id, 2000)).expect(201)
+    await apiB
+      .post(`/canteens/${canteenB}/purchases`)
+      .send(await purchaseBody(clientB.id, 2000))
+      .expect(201)
     await apiA
       .post(`/canteens/${canteenA}/entries/${purchase.entry.id}/reversal`)
       .send({ reason: "Conta errada", idempotencyKey: key() })
@@ -431,11 +443,11 @@ describe("painéis e conferência", () => {
 
     await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 1000, { referenceDate: date }))
+      .send(await purchaseBody(client.id, 1000, { referenceDate: date }))
       .expect(201)
     const { body: wrong } = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 700, { referenceDate: date }))
+      .send(await purchaseBody(client.id, 700, { referenceDate: date }))
       .expect(201)
     await api
       .post(`${base}/payments`)
@@ -450,7 +462,10 @@ describe("painéis e conferência", () => {
       .send({ reason: "Erro", idempotencyKey: key() })
       .expect(201)
     // Lançamento de outro dia não entra na conferência.
-    await api.post(`${base}/purchases`).send(purchaseBody(client.id, 999)).expect(201)
+    await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(client.id, 999))
+      .expect(201)
 
     const { body } = await api.get(`${base}/daily-review`).query({ date }).expect(200)
     expect(body.entries).toHaveLength(4)

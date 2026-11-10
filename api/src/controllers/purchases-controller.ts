@@ -15,20 +15,11 @@ import { findEntryToRedo, runEntryOperation, type Database } from "../utils/entr
 async function buildItems(db: Database, canteenId: string, { items, redoneFromId }: PurchasePreviewInput) {
   const original = redoneFromId ? await findEntryToRedo(db, canteenId, redoneFromId, "PURCHASE") : null
 
-  const productIds = items.flatMap((item) => (item.type === "PRODUCT" ? [item.productId] : []))
+  const productIds = items.map((item) => item.productId)
   const products = await db.product.findMany({ where: { id: { in: productIds }, canteenId } })
   const productsById = new Map(products.map((product) => [product.id, product]))
 
   const builtItems = items.map((item) => {
-    if (item.type === "CUSTOM") {
-      return {
-        productId: null,
-        description: item.description,
-        quantity: item.quantity,
-        unitPriceCents: item.unitPriceCents,
-      }
-    }
-
     const product = productsById.get(item.productId)
     if (!product) throw new AppError("Produto não encontrado", 404)
 

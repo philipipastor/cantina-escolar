@@ -44,7 +44,6 @@ export function presentEntry(entry: EntryWithDetails) {
     items: entry.items.map((item) => ({
       id: item.id,
       productId: item.productId,
-      isCustom: item.productId === null,
       description: item.description,
       quantity: item.quantity,
       unitPriceCents: item.unitPriceCents,

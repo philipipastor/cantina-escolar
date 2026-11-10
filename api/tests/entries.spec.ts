@@ -36,13 +36,13 @@ describe("exemplo do resumo do projeto", () => {
 
     await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(maria.id, 28000, { consumer: { type: "CHILD", childId: pedro.id } }))
+      .send(await purchaseBody(maria.id, 28000, { consumer: { type: "CHILD", childId: pedro.id } }))
       .expect(201)
     expect(await balanceOf(api, canteen, maria.id)).toBe(2000)
 
     const purchase = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(maria.id, 3500, { consumer: { type: "CHILD", childId: ana.id } }))
+      .send(await purchaseBody(maria.id, 3500, { consumer: { type: "CHILD", childId: ana.id } }))
       .expect(201)
     expect(purchase.body.effect.creditUsedCents).toBe(2000)
     expect(purchase.body.effect.onAccountCents).toBe(1500)
@@ -71,7 +71,7 @@ describe("registrar compra", () => {
       .send({
         clientId: client.id,
         consumer: { type: "ACCOUNT_HOLDER" },
-        items: [{ type: "PRODUCT", productId: snack.id, quantity: 2 }],
+        items: [{ productId: snack.id, quantity: 2 }],
       })
       .expect(200)
 
@@ -89,7 +89,7 @@ describe("registrar compra", () => {
       .send({
         clientId: client.id,
         consumer: { type: "ACCOUNT_HOLDER" },
-        items: [{ type: "PRODUCT", productId: juice.id, quantity: 2, unitPriceCents: 1 }],
+        items: [{ productId: juice.id, quantity: 2, unitPriceCents: 1 }],
         idempotencyKey: key(),
       })
       .expect(201)
@@ -108,7 +108,7 @@ describe("registrar compra", () => {
     const purchase = {
       clientId: client.id,
       consumer: { type: "ACCOUNT_HOLDER" },
-      items: [{ type: "PRODUCT", productId: cake.id, quantity: 1 }],
+      items: [{ productId: cake.id, quantity: 1 }],
     }
 
     const { body } = await api
@@ -127,12 +127,27 @@ describe("registrar compra", () => {
     expect(details.entry.items[0].description).toBe("Bolo")
   })
 
-  it("aceita item avulso com descrição e consumidor não identificado", async () => {
+  it("aceita consumidor não identificado", async () => {
     const client = await createClient(api, canteen)
-    const { body } = await api.post(`${base}/purchases`).send(purchaseBody(client.id, 2500)).expect(201)
+    const { body } = await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(client.id, 2500))
+      .expect(201)
 
-    expect(body.entry.items[0].isCustom).toBe(true)
     expect(body.entry.consumer).toEqual({ type: "UNIDENTIFIED", child: null })
+  })
+
+  it("não aceita item sem produto cadastrado", async () => {
+    const client = await createClient(api, canteen)
+    await api
+      .post(`${base}/purchases`)
+      .send({
+        clientId: client.id,
+        consumer: { type: "ACCOUNT_HOLDER" },
+        items: [{ description: "Lanche", quantity: 1, unitPriceCents: 500 }],
+        idempotencyKey: key(),
+      })
+      .expect(400)
   })
 
   it("não aceita filho de outra conta nem filho inativo", async () => {
@@ -141,24 +156,30 @@ describe("registrar compra", () => {
 
     await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(maria.id, 500, { consumer: { type: "CHILD", childId: joao.children[0]!.id } }))
+      .send(await purchaseBody(maria.id, 500, { consumer: { type: "CHILD", childId: joao.children[0]!.id } }))
       .expect(404)
 
     const pedro = maria.children[0]!
     await api.patch(`${base}/clients/${maria.id}/children/${pedro.id}`).send({ isActive: false }).expect(200)
     const refused = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(maria.id, 500, { consumer: { type: "CHILD", childId: pedro.id } }))
+      .send(await purchaseBody(maria.id, 500, { consumer: { type: "CHILD", childId: pedro.id } }))
       .expect(400)
     expect(refused.body.code).toBe("INACTIVE_CHILD")
   })
 
   it("bloqueia compra em conta inativa, mas ainda recebe pagamento dela", async () => {
     const client = await createClient(api, canteen)
-    await api.post(`${base}/purchases`).send(purchaseBody(client.id, 1000)).expect(201)
+    await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(client.id, 1000))
+      .expect(201)
     await api.patch(`${base}/clients/${client.id}`).send({ isActive: false }).expect(200)
 
-    const refused = await api.post(`${base}/purchases`).send(purchaseBody(client.id, 500)).expect(400)
+    const refused = await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(client.id, 500))
+      .expect(400)
     expect(refused.body.code).toBe("INACTIVE_CLIENT")
     await api.post(`${base}/payments`).send(paymentBody(client.id, 1000)).expect(201)
     expect(await balanceOf(api, canteen, client.id)).toBe(0)
@@ -170,7 +191,7 @@ describe("registrar compra", () => {
 
     const { body } = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 500, { expectedBalanceCents: 0 }))
+      .send(await purchaseBody(client.id, 500, { expectedBalanceCents: 0 }))
       .expect(409)
     expect(body.code).toBe("BALANCE_CHANGED")
     expect(await balanceOf(api, canteen, client.id)).toBe(1000)
@@ -180,10 +201,13 @@ describe("registrar compra", () => {
 describe("datas de lançamento", () => {
   it("aceita data passada, guarda o registro real e ordena o extrato pela data do consumo", async () => {
     const client = await createClient(api, canteen)
-    await api.post(`${base}/purchases`).send(purchaseBody(client.id, 1000)).expect(201)
+    await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(client.id, 1000))
+      .expect(201)
     const { body } = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 500, { referenceDate: "2026-01-15" }))
+      .send(await purchaseBody(client.id, 500, { referenceDate: "2026-01-15" }))
       .expect(201)
 
     expect(body.entry.referenceDate).toBe("2026-01-15")
@@ -200,7 +224,7 @@ describe("datas de lançamento", () => {
     for (const referenceDate of ["2999-01-01", "2026-02-31"]) {
       await api
         .post(`${base}/purchases`)
-        .send(purchaseBody(client.id, 500, { referenceDate }))
+        .send(await purchaseBody(client.id, 500, { referenceDate }))
         .expect(400)
     }
   })
@@ -209,7 +233,7 @@ describe("datas de lançamento", () => {
     const client = await createClient(api, canteen)
     const { body } = await api
       .post(`${base}/purchases/preview`)
-      .send({ ...purchaseBody(client.id, 500), referenceDate: "2026-01-15" })
+      .send({ ...(await purchaseBody(client.id, 500)), referenceDate: "2026-01-15" })
       .expect(200)
     expect(body.isDateDifferentFromToday).toBe(true)
   })
@@ -218,7 +242,7 @@ describe("datas de lançamento", () => {
 describe("proteção contra duplicidade", () => {
   it("uma nova tentativa com a mesma chave não duplica o lançamento", async () => {
     const client = await createClient(api, canteen)
-    const body = purchaseBody(client.id, 1000)
+    const body = await purchaseBody(client.id, 1000)
 
     const first = await api.post(`${base}/purchases`).send(body).expect(201)
     const second = await api.post(`${base}/purchases`).send(body).expect(200)
@@ -230,7 +254,7 @@ describe("proteção contra duplicidade", () => {
 
   it("envios simultâneos com a mesma chave geram um único lançamento", async () => {
     const client = await createClient(api, canteen)
-    const body = purchaseBody(client.id, 1000)
+    const body = await purchaseBody(client.id, 1000)
 
     const responses = await Promise.all(
       Array.from({ length: 5 }, () => api.post(`${base}/purchases`).send(body)),
@@ -247,12 +271,12 @@ describe("proteção contra duplicidade", () => {
 
     await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(maria.id, 1000, { idempotencyKey: usedKey }))
+      .send(await purchaseBody(maria.id, 1000, { idempotencyKey: usedKey }))
       .expect(201)
 
     const { body } = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(joao.id, 1000, { idempotencyKey: usedKey }))
+      .send(await purchaseBody(joao.id, 1000, { idempotencyKey: usedKey }))
       .expect(409)
     expect(body.code).toBe("IDEMPOTENCY_KEY_REUSED")
     expect(await balanceOf(api, canteen, joao.id)).toBe(0)
@@ -264,22 +288,25 @@ describe("proteção contra duplicidade", () => {
 
     await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 1000, unconfirmed))
+      .send(await purchaseBody(client.id, 1000, unconfirmed))
       .expect(201)
 
     const preview = await api
       .post(`${base}/purchases/preview`)
-      .send(purchaseBody(client.id, 1000))
+      .send(await purchaseBody(client.id, 1000))
       .expect(200)
     expect(preview.body.possibleDuplicate).not.toBeNull()
 
     const refused = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 1000, unconfirmed))
+      .send(await purchaseBody(client.id, 1000, unconfirmed))
       .expect(409)
     expect(refused.body.code).toBe("POSSIBLE_DUPLICATE")
 
-    await api.post(`${base}/purchases`).send(purchaseBody(client.id, 1000)).expect(201)
+    await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(client.id, 1000))
+      .expect(201)
     expect(await balanceOf(api, canteen, client.id)).toBe(-2000)
   })
 
@@ -287,9 +314,8 @@ describe("proteção contra duplicidade", () => {
     const client = await createClient(api, canteen)
     await api.post(`${base}/payments`).send(paymentBody(client.id, 1000)).expect(201)
 
-    const responses = await Promise.all(
-      Array.from({ length: 8 }, () => api.post(`${base}/purchases`).send(purchaseBody(client.id, 300))),
-    )
+    const bodies = await Promise.all(Array.from({ length: 8 }, () => purchaseBody(client.id, 300)))
+    const responses = await Promise.all(bodies.map((body) => api.post(`${base}/purchases`).send(body)))
 
     expect(responses.every((response) => response.status === 201)).toBe(true)
     expect(await balanceOf(api, canteen, client.id)).toBe(1000 - 8 * 300)
@@ -306,7 +332,7 @@ describe("estorno", () => {
     await api.post(`${base}/payments`).send(paymentBody(client.id, 2000)).expect(201)
     const { body: purchase } = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 3500))
+      .send(await purchaseBody(client.id, 3500))
       .expect(201)
     expect(await balanceOf(api, canteen, client.id)).toBe(-1500)
 
@@ -325,7 +351,7 @@ describe("estorno", () => {
     const client = await createClient(api, canteen)
     const { body: purchase } = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 1000))
+      .send(await purchaseBody(client.id, 1000))
       .expect(201)
     const id = purchase.entry.id as string
 
@@ -349,7 +375,7 @@ describe("estorno", () => {
     const client = await createClient(api, canteen)
     const { body: purchase } = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 1000))
+      .send(await purchaseBody(client.id, 1000))
       .expect(201)
     const body = { reason: "Erro", idempotencyKey: key() }
     const url = `${base}/entries/${purchase.entry.id}/reversal`
@@ -402,7 +428,7 @@ describe("refazer lançamento", () => {
     const juice = await createProduct(api, canteen, "Suco", 500)
     const shared = {
       consumer: { type: "ACCOUNT_HOLDER" },
-      items: [{ type: "PRODUCT", productId: juice.id, quantity: 2 }],
+      items: [{ productId: juice.id, quantity: 2 }],
     }
 
     const originalId = await reversedPurchase({ ...shared, clientId: wrong.id, idempotencyKey: key() })
@@ -433,15 +459,15 @@ describe("refazer lançamento", () => {
 
     const { body: active } = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 1000))
+      .send(await purchaseBody(client.id, 1000))
       .expect(201)
     const notReversed = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 1000, { redoneFromId: active.entry.id }))
+      .send(await purchaseBody(client.id, 1000, { redoneFromId: active.entry.id }))
       .expect(400)
     expect(notReversed.body.code).toBe("REDO_WITHOUT_REVERSAL")
 
-    const reversedId = await reversedPurchase(purchaseBody(client.id, 700))
+    const reversedId = await reversedPurchase(await purchaseBody(client.id, 700))
 
     const otherType = await api
       .post(`${base}/payments`)
@@ -451,11 +477,11 @@ describe("refazer lançamento", () => {
 
     await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 700, { redoneFromId: reversedId }))
+      .send(await purchaseBody(client.id, 700, { redoneFromId: reversedId }))
       .expect(201)
     const second = await api
       .post(`${base}/purchases`)
-      .send(purchaseBody(client.id, 700, { redoneFromId: reversedId }))
+      .send(await purchaseBody(client.id, 700, { redoneFromId: reversedId }))
       .expect(409)
     expect(second.body.code).toBe("ALREADY_REDONE")
   })
@@ -466,7 +492,7 @@ describe("refazer lançamento", () => {
     const shared = {
       clientId: client.id,
       consumer: { type: "ACCOUNT_HOLDER" },
-      items: [{ type: "PRODUCT", productId: cake.id, quantity: 1 }],
+      items: [{ productId: cake.id, quantity: 1 }],
     }
 
     const originalId = await reversedPurchase({ ...shared, idempotencyKey: key() })
@@ -537,7 +563,10 @@ describe("saldo inicial e devolução de crédito", () => {
 
   it("não devolve crédito em conta devedora", async () => {
     const client = await createClient(api, canteen)
-    await api.post(`${base}/purchases`).send(purchaseBody(client.id, 100)).expect(201)
+    await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(client.id, 100))
+      .expect(201)
     await api.post(`${base}/credit-refunds`).send(paymentBody(client.id, 50)).expect(400)
   })
 })
@@ -589,7 +618,10 @@ describe("recebimentos", () => {
 describe("imutabilidade no banco", () => {
   it("impede alterar ou apagar lançamentos, mesmo por acesso direto", async () => {
     const client = await createClient(api, canteen)
-    const { body } = await api.post(`${base}/purchases`).send(purchaseBody(client.id, 1000)).expect(201)
+    const { body } = await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(client.id, 1000))
+      .expect(201)
     const id = body.entry.id as string
 
     await expect(prisma.entry.delete({ where: { id } })).rejects.toThrow()

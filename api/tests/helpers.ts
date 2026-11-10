@@ -90,12 +90,20 @@ export async function createProduct(api: Api, canteenId: string, name: string, p
   return body.product as { id: string }
 }
 
-// Compra de um item avulso, o jeito mais curto de lançar um valor específico.
-export function purchaseBody(clientId: string, cents: number, extra: object = {}) {
+/**
+ * Compra de um valor específico, o jeito mais curto de criar dívida nos testes. Cria direto no
+ * banco um produto com esse preço, na cantina do cliente (ou na primeira, se o cliente não existir).
+ */
+export async function purchaseBody(clientId: string, cents: number, extra: object = {}) {
+  const owner = await prisma.client.findUnique({ where: { id: clientId }, select: { canteenId: true } })
+  const canteenId = owner?.canteenId ?? (await prisma.canteen.findFirstOrThrow()).id
+  const product = await prisma.product.create({
+    data: { canteenId, name: `Lanche ${randomUUID().slice(0, 8)}`, priceCents: cents },
+  })
   return {
     clientId,
     consumer: { type: "UNIDENTIFIED" },
-    items: [{ type: "CUSTOM", description: "Lanche", quantity: 1, unitPriceCents: cents }],
+    items: [{ productId: product.id, quantity: 1 }],
     idempotencyKey: key(),
     confirmDuplicate: true,
     ...extra,
