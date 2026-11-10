@@ -21,6 +21,7 @@ import { NewProductPage } from "../features/products/pages/NewProductPage"
 import { ProductsPage } from "../features/products/pages/ProductsPage"
 import { NewSalePage } from "../features/sales/pages/NewSalePage"
 import { SaleConfirmedPage } from "../features/sales/pages/SaleConfirmedPage"
+import { SummaryPage } from "../features/summary/pages/SummaryPage"
 import { EditUserPage } from "../features/users/pages/EditUserPage"
 import { NewUserPage } from "../features/users/pages/NewUserPage"
 import { ResetUserPasswordPage } from "../features/users/pages/ResetUserPasswordPage"
@@ -63,6 +64,7 @@ export function App() {
                 <Route path="/venda/confirmada" element={<SaleConfirmedPage />} />
                 <Route path="/lancamentos/:id" element={<EntryDetailsPage />} />
                 <Route path="/vendas-do-dia" element={<DailySalesPage />} />
+                <Route path="/resumo" element={<SummaryPage />} />
               </Route>
             </Route>
           </Route>
