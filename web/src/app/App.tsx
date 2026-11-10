@@ -8,6 +8,7 @@ import { CanteenGate } from "../features/canteens/CanteenContext"
 import { CanteensPage } from "../features/canteens/pages/CanteensPage"
 import { ClientReportPage } from "../features/clients/pages/ClientReportPage"
 import { ClientsPage } from "../features/clients/pages/ClientsPage"
+import { DashboardPage } from "../features/dashboard/pages/DashboardPage"
 import { EntryDetailsPage } from "../features/entries/pages/EntryDetailsPage"
 import { EditClientPage } from "../features/clients/pages/EditClientPage"
 import { NewClientPage } from "../features/clients/pages/NewClientPage"
@@ -21,7 +22,6 @@ import { NewSalePage } from "../features/sales/pages/NewSalePage"
 import { SaleConfirmedPage } from "../features/sales/pages/SaleConfirmedPage"
 import { useOnlineStatus } from "../hooks/useOnlineStatus"
 import { ProtectedRoute } from "./ProtectedRoute"
-import { TemporaryHome } from "./TemporaryHome"
 
 export function App() {
   const isOnline = useOnlineStatus()
@@ -35,12 +35,11 @@ export function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/trocar-senha" element={<ChangePasswordPage />} />
             <Route element={<AppLayout />}>
-              {/* Tela inicial provisória até o Dashboard ficar pronto. */}
-              <Route path="/" element={<TemporaryHome />} />
               <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
                 <Route path="/empresas" element={<CanteensPage />} />
               </Route>
               <Route element={<CanteenGate />}>
+                <Route path="/" element={<DashboardPage />} />
                 <Route path="/clientes" element={<ClientsPage />} />
                 <Route path="/clientes/novo" element={<NewClientPage />} />
                 <Route path="/clientes/:id" element={<ClientReportPage />} />
