@@ -13,6 +13,8 @@ import { NewClientPage } from "../features/clients/pages/NewClientPage"
 import { EditProductPage } from "../features/products/pages/EditProductPage"
 import { NewProductPage } from "../features/products/pages/NewProductPage"
 import { ProductsPage } from "../features/products/pages/ProductsPage"
+import { NewSalePage } from "../features/sales/pages/NewSalePage"
+import { SaleConfirmedPage } from "../features/sales/pages/SaleConfirmedPage"
 import { useOnlineStatus } from "../hooks/useOnlineStatus"
 import { ProtectedRoute } from "./ProtectedRoute"
 import { TemporaryHome } from "./TemporaryHome"
@@ -42,6 +44,8 @@ export function App() {
                 <Route path="/clientes/novo" element={<NewClientPage />} />
                 <Route path="/clientes/:id" element={<ClientReportPage />} />
                 <Route path="/clientes/:id/editar" element={<EditClientPage />} />
+                <Route path="/venda" element={<NewSalePage />} />
+                <Route path="/venda/confirmada" element={<SaleConfirmedPage />} />
               </Route>
             </Route>
           </Route>
