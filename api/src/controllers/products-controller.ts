@@ -27,13 +27,20 @@ export class ProductsController {
              ), 0)::bigint AS "recentlySold"
       FROM "Product" p
       WHERE p."canteenId" = ${request.params.canteenId}
-        AND p."isActive" = ${active}
+        AND (${active}::boolean IS NULL OR p."isActive" = ${active}::boolean)
         AND unaccent(p."name") ILIKE unaccent(${term}::text)
       ORDER BY "recentlySold" DESC, lower(unaccent(p."name")), p."id"`
 
     return response.json({
       products: rows.map((row) => ({ ...row, recentlySold: Number(row.recentlySold) })),
     })
+  }
+
+  async show(request: Request, response: Response) {
+    const { id } = idParamsSchema.parse(request.params)
+    const product = await prisma.product.findFirst({ where: { id, canteenId: request.params.canteenId } })
+    if (!product) throw new AppError("Produto não encontrado", 404)
+    return response.json({ product })
   }
 
   async create(request: Request, response: Response) {
