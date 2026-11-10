@@ -21,6 +21,10 @@ import { NewProductPage } from "../features/products/pages/NewProductPage"
 import { ProductsPage } from "../features/products/pages/ProductsPage"
 import { NewSalePage } from "../features/sales/pages/NewSalePage"
 import { SaleConfirmedPage } from "../features/sales/pages/SaleConfirmedPage"
+import { EditUserPage } from "../features/users/pages/EditUserPage"
+import { NewUserPage } from "../features/users/pages/NewUserPage"
+import { ResetUserPasswordPage } from "../features/users/pages/ResetUserPasswordPage"
+import { UsersPage } from "../features/users/pages/UsersPage"
 import { useOnlineStatus } from "../hooks/useOnlineStatus"
 import { ProtectedRoute } from "./ProtectedRoute"
 
@@ -38,6 +42,10 @@ export function App() {
             <Route element={<AppLayout />}>
               <Route element={<ProtectedRoute roles={["ADMIN"]} />}>
                 <Route path="/empresas" element={<CanteensPage />} />
+                <Route path="/usuarios" element={<UsersPage />} />
+                <Route path="/usuarios/novo" element={<NewUserPage />} />
+                <Route path="/usuarios/:id/editar" element={<EditUserPage />} />
+                <Route path="/usuarios/:id/senha" element={<ResetUserPasswordPage />} />
               </Route>
               <Route element={<CanteenGate />}>
                 <Route path="/" element={<DashboardPage />} />
