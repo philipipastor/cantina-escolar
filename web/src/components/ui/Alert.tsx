@@ -1,14 +1,31 @@
 import type { ReactNode } from "react"
-import { CircleAlert } from "lucide-react"
+import { CircleAlert, CircleCheck } from "lucide-react"
+import { cn } from "../../lib/cn"
 
-// Aviso de erro no estilo das caixas rosadas do Figma.
-export function Alert({ children }: { children: ReactNode }) {
+type AlertProps = {
+  // "note" tem o visual do erro, mas é um lembrete fixo da tela: não é anunciado como um problema.
+  variant?: "error" | "success" | "note"
+  children: ReactNode
+}
+
+// Avisos nas cores do Figma: rosado para erro e lembretes, verde para confirmação.
+export function Alert({ variant = "error", children }: AlertProps) {
+  const isSuccess = variant === "success"
+  const Icon = isSuccess ? CircleCheck : CircleAlert
+  const role = variant === "error" ? "alert" : isSuccess ? "status" : undefined
+
   return (
     <div
-      role="alert"
-      className="flex items-start gap-2 rounded-field bg-primary-soft p-3 text-small text-primary"
+      role={role}
+      className={cn(
+        "flex items-start gap-2 rounded-field p-3",
+        variant === "note" ? "text-caption" : "text-small",
+        isSuccess
+          ? "border border-success-line bg-success-soft text-success"
+          : "bg-primary-soft text-primary",
+      )}
     >
-      <CircleAlert className="mt-px size-4 shrink-0" aria-hidden />
+      <Icon className="mt-px size-4 shrink-0" aria-hidden />
       <p>{children}</p>
     </div>
   )

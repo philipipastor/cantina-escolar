@@ -16,12 +16,43 @@
   --color-line: #e8eaee;
   --color-page: #f7f8fa;
   --color-surface: #ffffff;
+  --color-success: #16a34a;
+  --color-success-soft: #f0fbf4;
+  --color-success-line: #c3edd3;
+  --color-primary-line: #fbcdd0;
+  --color-avatar: #f0f2f5;
+  /* Chips dos filhos no cartão do cliente. */
+  --color-chip: #f0f1f3;
+  --color-chip-initial: #ed2144;
 
   /* Tamanhos de texto do Figma. Todos usam altura de linha de 140%. */
   --text-title: 27px;
   --text-title--line-height: 1.4;
   --text-amount: 26px;
   --text-amount--line-height: 1.4;
+  /* Campo de valor em destaque: "R$" e o número digitado. */
+  --text-entry: 32px;
+  --text-entry--line-height: 1.4;
+  --text-currency: 18px;
+  --text-currency--line-height: 1.4;
+  /* Saudação no cabeçalho vermelho do Dashboard. */
+  --text-greeting: 23px;
+  --text-greeting--line-height: 1.4;
+  /* Números dos cartões do resumo no Dashboard. */
+  --text-figure: 25px;
+  --text-figure--line-height: 1.4;
+  /* Resumo: total a receber e os números do mês. */
+  --text-hero: 33px;
+  --text-hero--line-height: 1.4;
+  --text-metric: 21px;
+  --text-metric--line-height: 1.4;
+  /* Vendas do Dia: total do dia e total de cada registro. */
+  --text-total: 28px;
+  --text-total--line-height: 1.4;
+  --text-price: 17px;
+  --text-price--line-height: 21px;
+  --text-lead: 16px;
+  --text-lead--line-height: 1.4;
   --text-section: 15px;
   --text-section--line-height: 1.4;
   --text-body: 14px;
@@ -30,6 +61,12 @@
   --text-small--line-height: 1.4;
   --text-caption: 12px;
   --text-caption--line-height: 1.4;
+  --text-stat: 22px;
+  --text-stat--line-height: 1.2;
+  --text-mini: 11px;
+  --text-mini--line-height: 1.4;
+  --text-nav: 10px;
+  --text-nav--line-height: 1.4;
 
   --radius-field: 12px;
   --radius-card: 16px;
