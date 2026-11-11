@@ -1,5 +1,6 @@
 import { useId, type InputHTMLAttributes, type ReactNode, type Ref } from "react"
 import { cn } from "../../../lib/cn"
+import { withMoneyMask } from "../../../lib/moneyInput"
 
 type AmountFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   label: string
@@ -10,7 +11,8 @@ type AmountFieldProps = InputHTMLAttributes<HTMLInputElement> & {
   ref?: Ref<HTMLInputElement>
 }
 
-// Campo de valor em destaque. Fica cinza enquanto vazio e ganha a borda vermelha ao ser preenchido.
+// Campo de valor em destaque, já com a máscara de dinheiro: o valor se forma da direita para a esquerda.
+// Fica cinza enquanto vazio e ganha a borda vermelha ao ser preenchido.
 export function AmountField({ label, action, hint, error, className, ...props }: AmountFieldProps) {
   const id = useId()
   const describedBy = `${id}-description`
@@ -33,13 +35,10 @@ export function AmountField({ label, action, hint, error, className, ...props }:
         <span className="text-currency text-muted">R$</span>
         <input
           id={id}
-          inputMode="decimal"
-          autoComplete="off"
-          placeholder="0,00"
           aria-invalid={error ? true : undefined}
           aria-describedby={error || hint ? describedBy : undefined}
           className="h-full w-full min-w-0 bg-transparent text-entry font-semibold caret-primary outline-none placeholder:text-muted"
-          {...props}
+          {...withMoneyMask(props)}
         />
       </div>
       {(error || hint) && (

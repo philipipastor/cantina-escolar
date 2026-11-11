@@ -4,12 +4,10 @@ import { PageContainer } from "../../../components/layout/PageContainer"
 import { PageHeader } from "../../../components/layout/PageHeader"
 import { ErrorState, LoadingState } from "../../../components/ui/States"
 import { useApiData } from "../../../hooks/useApiData"
+import { centsToInput } from "../../../lib/money"
 import { useCurrentCanteen } from "../../canteens/CanteenContext"
 import { fetchProduct, updateProduct } from "../api"
 import { ProductForm } from "../components/ProductForm"
-
-// Centavos para o texto do campo: 650 vira "6,50".
-const toPriceText = (cents: number) => (cents / 100).toFixed(2).replace(".", ",")
 
 export function EditProductPage() {
   const canteen = useCurrentCanteen()
@@ -32,7 +30,7 @@ export function EditProductPage() {
         isEditing
         defaultValues={{
           name: product.name,
-          price: toPriceText(product.priceCents),
+          price: centsToInput(product.priceCents),
           isActive: product.isActive,
         }}
         submitLabel="Salvar alterações"

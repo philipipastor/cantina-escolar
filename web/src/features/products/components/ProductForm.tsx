@@ -9,6 +9,7 @@ import { Switch } from "../../../components/ui/Switch"
 import { TextField } from "../../../components/ui/TextField"
 import { ApiError } from "../../../lib/api"
 import { parseCents } from "../../../lib/money"
+import { withMoneyMask } from "../../../lib/moneyInput"
 import { productSchema, type ProductFormInput } from "../schemas"
 
 type ProductFormProps = {
@@ -48,10 +49,8 @@ export function ProductForm({ defaultValues, submitLabel, isEditing, onSubmit }:
         <TextField
           label="Preço de venda"
           prefix="R$"
-          placeholder="0,00"
-          inputMode="decimal"
           error={errors.price?.message}
-          {...register("price")}
+          {...withMoneyMask(register("price"))}
         />
         {isEditing && (
           <>
