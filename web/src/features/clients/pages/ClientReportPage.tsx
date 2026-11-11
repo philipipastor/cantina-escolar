@@ -14,6 +14,7 @@ import { firstDayOfMonthIso, formatDayMonth, formatLongDate, todayIso } from "..
 import { formatCents } from "../../../lib/money"
 import { useCurrentCanteen } from "../../canteens/CanteenContext"
 import { fetchClient, fetchStatement } from "../api"
+import { prepareBalanceShare, shareBalance, type ShareResult } from "../balanceShare"
 import { BalanceSummary } from "../components/BalanceValue"
 import { ChildChips } from "../components/ChildChips"
 import { EntryCard } from "../components/EntryCard"
@@ -61,6 +62,20 @@ export function ClientReportPage() {
   )
   const client = useApiData(loadClient)
   const statement = useApiData(loadStatement)
+
+  // Guarda de qual cliente é a mensagem, para não mostrar a de outro ao trocar de cliente.
+  const [sharedState, setShared] = useState<{
+    clientId: string
+    message: string
+    result: ShareResult
+  } | null>(null)
+  const shared = sharedState?.clientId === id ? sharedState : null
+
+  async function sendBalance() {
+    if (!client.data) return
+    const share = prepareBalanceShare(client.data)
+    setShared({ clientId: id, message: share.message, result: await shareBalance(share) })
+  }
 
   function clearFilter() {
     const initial = { from: firstDayOfMonthIso(), to: todayIso() }
@@ -158,6 +173,14 @@ export function ClientReportPage() {
             <span className="text-caption font-semibold">Saldo atual do cliente</span>
             <CurrentBalance balance={balance} />
           </div>
+          <Button variant="outline" onClick={sendBalance}>
+            <Send className="size-4.5" strokeWidth={1.5} aria-hidden />
+            Enviar saldo atual
+          </Button>
+          {shared?.result === "copied" && (
+            <Alert variant="success">Mensagem copiada: “{shared.message}”</Alert>
+          )}
+          {shared?.result === "manual" && <Alert variant="note">Copie a mensagem: “{shared.message}”</Alert>}
         </Card>
 
         <section aria-labelledby="entries-title" className="flex flex-col gap-2.5">
