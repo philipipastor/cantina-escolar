@@ -55,11 +55,32 @@ export async function updateChild(
   return data.child
 }
 
-export async function fetchStatement(canteenId: string, clientId: string, from: string, to: string) {
+const STATEMENT_PAGE_SIZE = 200
+
+export async function fetchStatement(
+  canteenId: string,
+  clientId: string,
+  from: string,
+  to: string,
+  page = 1,
+) {
   const { data } = await api.get<Statement>(`${clientsUrl(canteenId)}/${clientId}/statement`, {
-    params: { from, to, perPage: 200 },
+    params: { from, to, perPage: STATEMENT_PAGE_SIZE, page },
   })
   return data
+}
+
+// Todos os lançamentos do período, em ordem cronológica, para o extrato em PDF. A tela mostra só os
+// 200 mais recentes; aqui as páginas seguintes (mais antigas) são buscadas até completar o período.
+export async function fetchFullStatement(canteenId: string, clientId: string, from: string, to: string) {
+  const first = await fetchStatement(canteenId, clientId, from, to)
+  const pages = Math.ceil(first.total / STATEMENT_PAGE_SIZE)
+  let entries = first.entries
+  for (let page = 2; page <= pages; page++) {
+    const older = await fetchStatement(canteenId, clientId, from, to, page)
+    entries = [...older.entries, ...entries]
+  }
+  return { ...first, entries }
 }
 
 // Dívida ou crédito que o cliente já tinha antes de usar o sistema.

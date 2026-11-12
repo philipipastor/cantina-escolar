@@ -18,6 +18,7 @@ import { prepareBalanceShare, shareBalance, type ShareResult } from "../balanceS
 import { BalanceSummary } from "../components/BalanceValue"
 import { ChildChips } from "../components/ChildChips"
 import { EntryCard } from "../components/EntryCard"
+import { SendStatementButton } from "../statement/SendStatementButton"
 import type { Balance } from "../types"
 
 const balanceColors = { DEBT: "text-primary", CREDIT: "text-success", ZERO: "text-muted" }
@@ -227,11 +228,8 @@ export function ClientReportPage() {
           )}
         </section>
 
-        {/* O envio por WhatsApp é de uma etapa futura; por enquanto, o botão fica sem ação. */}
-        <Button aria-label="Enviar extrato (em breve)">
-          <Send className="size-4.5" strokeWidth={1.5} aria-hidden />
-          Enviar extrato
-        </Button>
+        {/* PDF do período aplicado no filtro, compartilhado pelo aparelho (WhatsApp). */}
+        <SendStatementButton client={client.data} period={period} />
         {balance.availableCreditCents > 0 && (
           <Button variant="outline" onClick={() => navigate(`/clientes/${id}/devolver-credito`)}>
             <HandCoins className="size-4.5" strokeWidth={1.5} aria-hidden />

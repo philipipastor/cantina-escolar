@@ -46,12 +46,20 @@ export type StatementEntry = {
   reason: string | null
   items: { id: string; description: string; quantity: number; subtotalCents: number }[]
   isReversed: boolean
+  // Num estorno, o lançamento que ele cancela.
+  reverses: { type: EntryType; referenceDate: string } | null
   balanceAfterCents: number
 }
 
 export type Statement = {
   balance: Balance
-  period: { purchasedCents: number; paidCents: number }
+  period: {
+    purchasedCents: number
+    paidCents: number
+    // Saldo antes do primeiro dia e ao fim do último dia do período (negativo = dívida).
+    openingBalanceCents: number
+    closingBalanceCents: number
+  }
   entries: StatementEntry[]
   total: number
 }

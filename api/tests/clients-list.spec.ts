@@ -101,8 +101,50 @@ describe("extrato por período", () => {
 
     const { body } = await api.get(url).query({ from: "2026-02-01", to: "2026-02-28" }).expect(200)
     expect(body.entries[0].balanceAfterCents).toBe(-3000)
-    expect(body.period).toEqual({ purchasedCents: 2000, paidCents: 500 })
+    // O estorno é de hoje, fora de fevereiro: no fim de fevereiro a compra de 4,00 ainda estava em aberto.
+    expect(body.period).toEqual({
+      purchasedCents: 2000,
+      paidCents: 500,
+      openingBalanceCents: -1000,
+      closingBalanceCents: -2900,
+    })
 
     await api.get(url).query({ from: "ontem" }).expect(400)
+  })
+
+  it("calcula o saldo no início e no fim do período, incluindo o último dia inteiro", async () => {
+    const maria = await createClient(api, canteenA, "Maria")
+    const url = `${base}/clients/${maria.id}/statement`
+    const buy = async (cents: number, referenceDate: string) =>
+      api
+        .post(`${base}/purchases`)
+        .send(await purchaseBody(maria.id, cents, { referenceDate }))
+        .expect(201)
+
+    await buy(2000, "2026-09-30") // antes do período: começa devendo 20,00
+    await buy(1200, "2026-10-01")
+    await buy(1600, "2026-10-31") // último dia do período
+    await api
+      .post(`${base}/payments`)
+      .send(paymentBody(maria.id, 1000, { referenceDate: "2026-10-15" }))
+      .expect(201)
+    await buy(900, "2026-11-01") // depois do período
+
+    const { body } = await api.get(url).query({ from: "2026-10-01", to: "2026-10-31" }).expect(200)
+    expect(body.period).toEqual({
+      purchasedCents: 2800,
+      paidCents: 1000,
+      openingBalanceCents: -2000,
+      closingBalanceCents: -3800,
+    })
+    expect(body.entries.map((entry: { referenceDate: string }) => entry.referenceDate)).toEqual([
+      "2026-10-01",
+      "2026-10-15",
+      "2026-10-31",
+    ])
+
+    // Período sem lançamentos: o saldo não muda do início ao fim.
+    const empty = await api.get(url).query({ from: "2026-10-16", to: "2026-10-20" }).expect(200)
+    expect(empty.body.period).toMatchObject({ openingBalanceCents: -2200, closingBalanceCents: -2200 })
   })
 })

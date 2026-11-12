@@ -157,16 +157,23 @@ export class ClientsController {
     })
 
     // O saldo acumulado considera todo o histórico; só depois o extrato é recortado pelo período.
+    // Junto, o saldo no início do período (tudo antes de `from`) e no fim dele (tudo até `to`, o dia inteiro),
+    // usados pelo extrato em PDF. Só leitura: nada é gravado.
     let balanceCents = 0
+    let openingBalanceCents = 0
+    let closingBalanceCents = 0
     const statement = entries
       .map((entry) => {
         balanceCents += entry.amountCents
-        return { ...presentEntry(entry), balanceAfterCents: balanceCents }
+        const presented = presentEntry(entry)
+        if (from && presented.referenceDate < from) openingBalanceCents = balanceCents
+        if (!to || presented.referenceDate <= to) closingBalanceCents = balanceCents
+        return { ...presented, balanceAfterCents: balanceCents }
       })
       .filter((entry) => (!from || entry.referenceDate >= from) && (!to || entry.referenceDate <= to))
 
     // Compras e pagamentos estornados não entram nos totais, igual aos painéis.
-    const period = { purchasedCents: 0, paidCents: 0 }
+    const period = { purchasedCents: 0, paidCents: 0, openingBalanceCents, closingBalanceCents }
     for (const entry of statement) {
       if (entry.isReversed) continue
       if (entry.type === "PURCHASE") period.purchasedCents += -entry.amountCents
