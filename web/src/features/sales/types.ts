@@ -10,7 +10,8 @@ export type SaleItem = {
 
 export type ConsumerType = "CHILD" | "ACCOUNT_HOLDER" | "UNIDENTIFIED"
 
-export type PurchaseConsumer = { type: "CHILD"; childId: string } | { type: Exclude<ConsumerType, "CHILD"> }
+// Uma venda nova só aceita um filho ou o responsável; UNIDENTIFIED existe apenas nas vendas antigas.
+export type PurchaseConsumer = { type: "CHILD"; childId: string } | { type: "ACCOUNT_HOLDER" }
 
 export type PurchaseItemInput = { productId: string; quantity: number }
 

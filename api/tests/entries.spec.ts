@@ -127,14 +127,22 @@ describe("registrar compra", () => {
     expect(details.entry.items[0].description).toBe("Bolo")
   })
 
-  it("aceita consumidor não identificado", async () => {
+  it("registra a compra do responsável", async () => {
     const client = await createClient(api, canteen)
     const { body } = await api
       .post(`${base}/purchases`)
       .send(await purchaseBody(client.id, 2500))
       .expect(201)
 
-    expect(body.entry.consumer).toEqual({ type: "UNIDENTIFIED", child: null })
+    expect(body.entry.consumer).toEqual({ type: "ACCOUNT_HOLDER", child: null })
+  })
+
+  it("não aceita mais consumidor não identificado", async () => {
+    const client = await createClient(api, canteen)
+    await api
+      .post(`${base}/purchases`)
+      .send(await purchaseBody(client.id, 2500, { consumer: { type: "UNIDENTIFIED" } }))
+      .expect(400)
   })
 
   it("não aceita item sem produto cadastrado", async () => {

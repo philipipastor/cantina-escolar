@@ -102,7 +102,7 @@ export async function purchaseBody(clientId: string, cents: number, extra: objec
   })
   return {
     clientId,
-    consumer: { type: "UNIDENTIFIED" },
+    consumer: { type: "ACCOUNT_HOLDER" },
     items: [{ productId: product.id, quantity: 1 }],
     idempotencyKey: key(),
     confirmDuplicate: true,

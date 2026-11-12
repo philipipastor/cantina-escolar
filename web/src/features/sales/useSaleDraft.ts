@@ -14,7 +14,10 @@ function defaultConsumer(client: Client) {
 
 function consumerFromEntry(entry: Entry): ConsumerChoice | null {
   if (!entry.consumer) return null
-  return entry.consumer.type === "CHILD" ? (entry.consumer.child?.id ?? null) : entry.consumer.type
+  if (entry.consumer.type === "CHILD") return entry.consumer.child?.id ?? null
+  if (entry.consumer.type === "ACCOUNT_HOLDER") return ACCOUNT_HOLDER
+  // Venda antiga "não identificada": ao refazer, a pessoa escolhe quem consumiu.
+  return null
 }
 
 function itemsFromEntry(entry: Entry): SaleItem[] {

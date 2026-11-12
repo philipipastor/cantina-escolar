@@ -13,11 +13,13 @@ import {
 const paymentMethodField = z.enum(["CASH", "PIX", "CARD"], { error: "Informe a forma de pagamento" })
 const quantityField = z.number().int().min(1).max(1000)
 
-const consumerField = z.discriminatedUnion("type", [
-  z.object({ type: z.literal("CHILD"), childId: idField }),
-  z.object({ type: z.literal("ACCOUNT_HOLDER") }),
-  z.object({ type: z.literal("UNIDENTIFIED") }),
-])
+// Toda venda nova diz quem consumiu: um filho ou o responsável. O "não identificado" (UNIDENTIFIED)
+// continua no banco só para as vendas antigas que o usaram, que seguem aparecendo no extrato.
+const consumerField = z.discriminatedUnion(
+  "type",
+  [z.object({ type: z.literal("CHILD"), childId: idField }), z.object({ type: z.literal("ACCOUNT_HOLDER") })],
+  { error: "Informe quem consumiu: um filho ou o responsável" },
+)
 
 // Só se vende produto cadastrado: o preço sempre vem do servidor, nunca de quem envia a compra.
 const itemField = z.object({ productId: idField, quantity: quantityField })
