@@ -12,6 +12,7 @@ import { FilterChips } from "../../../components/ui/FilterChips"
 import { TextField } from "../../../components/ui/TextField"
 import { ApiError } from "../../../lib/api"
 import { parseCents } from "../../../lib/money"
+import { withMoneyMask } from "../../../lib/moneyInput"
 import { formatPhone } from "../../../lib/text"
 import { useCurrentCanteen } from "../../canteens/CanteenContext"
 import { createClient, createOpeningBalance } from "../api"
@@ -160,10 +161,8 @@ export function NewClientPage() {
             <TextField
               label={openingNature === "DEBT" ? "Valor que o cliente devia" : "Crédito que o cliente tinha"}
               prefix="R$"
-              placeholder="0,00"
-              inputMode="decimal"
               error={errors.openingAmount?.message}
-              {...register("openingAmount")}
+              {...withMoneyMask(register("openingAmount"))}
             />
           )}
         </FormSection>
