@@ -1,14 +1,15 @@
-import { Send } from "lucide-react"
 import { PageContainer } from "../../../components/layout/PageContainer"
 import { PageHeader } from "../../../components/layout/PageHeader"
-import { Button } from "../../../components/ui/Button"
 import { Card } from "../../../components/ui/Card"
+import { SendReceiptButton } from "../../../components/ui/SendReceiptButton"
 import { formatCents } from "../../../lib/money"
+import { useReceiptClient } from "../../clients/useReceiptClient"
 import { BackToStatement } from "../../entries/components/BackToStatement"
 import { EntryOverviewCard } from "../../entries/components/EntryOverviewCard"
 import { ReversalSection } from "../../entries/components/ReversalSection"
 import { ProductThumb } from "../../products/components/ProductThumb"
 import { consumerTypeLabel } from "../consumer"
+import { preparePurchaseReceipt } from "../receiptMessage"
 import type { Entry } from "../types"
 
 function consumptionText(entry: Entry) {
@@ -18,6 +19,8 @@ function consumptionText(entry: Entry) {
 }
 
 export function PurchaseDetails({ entry, onReversed }: { entry: Entry; onReversed: () => void }) {
+  const { client, isLoading, loadFailed } = useReceiptClient(entry)
+
   return (
     <PageContainer>
       <PageHeader title="Detalhes da compra" subtitle="Veja todas as informações do lançamento." />
@@ -54,11 +57,12 @@ export function PurchaseDetails({ entry, onReversed }: { entry: Entry; onReverse
           </Card>
         </section>
 
-        {/* O envio por WhatsApp é de uma etapa futura; por enquanto, o botão fica sem ação. */}
-        <Button aria-label="Enviar comprovante (em breve)">
-          <Send className="size-4.5" strokeWidth={1.5} aria-hidden />
-          Enviar Comprovante
-        </Button>
+        {/* Abre o WhatsApp do cliente com o comprovante desta compra e o saldo de agora. */}
+        <SendReceiptButton
+          prepare={client && (() => preparePurchaseReceipt(entry, client))}
+          isLoading={isLoading}
+          loadFailed={loadFailed}
+        />
 
         <ReversalSection
           entry={entry}

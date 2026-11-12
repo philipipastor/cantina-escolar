@@ -1,31 +1,23 @@
-import { formatCents } from "../../lib/money"
+import { formatMoneyForMessage, type MessageShare } from "../../lib/whatsapp"
 import type { Balance, Client } from "./types"
 
-// Texto enviado ao responsável: só a situação e o valor do saldo atual, nada do extrato.
+// Texto enviado ao responsável: a saudação com o nome e o saldo atual, nada do extrato.
 // Usa os valores que a API já calcula (amountOwedCents e availableCreditCents), sem refazer contas.
-export function buildBalanceMessage(balance: Balance) {
-  if (balance.status === "DEBT") return `Saldo devedor: ${formatCents(balance.amountOwedCents)}`
-  if (balance.status === "CREDIT") return `Crédito disponível: ${formatCents(balance.availableCreditCents)}`
-  return `Saldo atual: ${formatCents(0)}`
+// O \n quebra a linha no WhatsApp.
+export function buildBalanceMessage(name: string, balance: Balance) {
+  const greeting = `Olá, ${name.trim()}.`
+  if (balance.status === "CREDIT")
+    return `${greeting}\nSeu crédito atual é de: ${formatMoneyForMessage(balance.availableCreditCents)}`
+  // A dívida aparece sem o sinal de menos.
+  if (balance.status === "DEBT")
+    return `${greeting}\nSeu débito atual é de: ${formatMoneyForMessage(balance.amountOwedCents)}`
+  // Conta em dia: R$ 0,00.
+  return `${greeting}\nSeu saldo atual é de: ${formatMoneyForMessage(balance.amountOwedCents)}`
 }
 
-// O que o envio precisa: a mensagem pronta e o telefone do cliente, que o WhatsApp vai usar.
-export type BalanceShare = { message: string; phone: string | null }
-
-export function prepareBalanceShare(client: Pick<Client, "balance" | "phone">): BalanceShare {
-  return { message: buildBalanceMessage(client.balance), phone: client.phone }
+export function prepareBalanceShare(client: Pick<Client, "name" | "balance" | "phone">): MessageShare {
+  return { message: buildBalanceMessage(client.name, client.balance), phone: client.phone }
 }
 
-// "copied": a mensagem foi copiada; "manual": o navegador não deixou copiar e a pessoa copia da tela.
-export type ShareResult = "copied" | "manual"
-
-// Único ponto de envio da tela. Por enquanto copia a mensagem para colar em qualquer conversa.
-// Na integração com o WhatsApp, só esta função muda: a tela continua chamando shareBalance.
-export async function shareBalance({ message }: BalanceShare): Promise<ShareResult> {
-  try {
-    await navigator.clipboard.writeText(message)
-    return "copied"
-  } catch {
-    return "manual"
-  }
-}
+// O envio em si é o mesmo do comprovante de venda (WhatsApp, menu de compartilhar ou cópia).
+export { shareMessage as shareBalance, type ShareResult } from "../../lib/whatsapp"

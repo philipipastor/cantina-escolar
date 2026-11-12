@@ -63,4 +63,7 @@ export type SaleConfirmation = {
   referenceDate: string
   balanceBeforeCents: number
   balance: Balance
+  // Para o comprovante: a compra como a API registrou e o telefone do cliente.
+  entry: Entry
+  phone: string | null
 }

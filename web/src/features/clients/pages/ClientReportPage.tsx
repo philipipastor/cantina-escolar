@@ -177,6 +177,12 @@ export function ClientReportPage() {
             <Send className="size-4.5" strokeWidth={1.5} aria-hidden />
             Enviar saldo atual
           </Button>
+          {shared?.result === "whatsapp" && (
+            <Alert variant="success">WhatsApp aberto com a mensagem: “{shared.message}”</Alert>
+          )}
+          {shared?.result === "shared" && (
+            <Alert variant="success">Mensagem compartilhada: “{shared.message}”</Alert>
+          )}
           {shared?.result === "copied" && (
             <Alert variant="success">Mensagem copiada: “{shared.message}”</Alert>
           )}

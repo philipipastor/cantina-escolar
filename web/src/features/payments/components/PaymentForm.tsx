@@ -97,6 +97,7 @@ export function PaymentForm({ initial }: { initial: PaymentFormInitial }) {
         referenceDate: result.entry.referenceDate,
         balanceBeforeCents: result.effect?.balanceBefore.balanceCents ?? client.balance.balanceCents,
         balance: result.balance,
+        phone: client.phone,
       }
       navigate("/pagamento/confirmado", { replace: true, state: confirmation })
     } catch (error) {

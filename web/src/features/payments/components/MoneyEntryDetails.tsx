@@ -1,14 +1,15 @@
-import { Send } from "lucide-react"
 import { PageContainer } from "../../../components/layout/PageContainer"
 import { PageHeader } from "../../../components/layout/PageHeader"
-import { Button } from "../../../components/ui/Button"
 import { Card } from "../../../components/ui/Card"
+import { SendReceiptButton } from "../../../components/ui/SendReceiptButton"
 import { formatCents } from "../../../lib/money"
 import { paymentMethodLabels } from "../../clients/paymentMethod"
+import { useReceiptClient } from "../../clients/useReceiptClient"
 import { BackToStatement } from "../../entries/components/BackToStatement"
 import { EntryOverviewCard } from "../../entries/components/EntryOverviewCard"
 import { ReversalSection, type RedoTexts } from "../../entries/components/ReversalSection"
 import type { Entry } from "../../sales/types"
+import { preparePaymentReceipt } from "../paymentReceiptMessage"
 
 // Recebimento e devolução têm a mesma forma (valor e meio de pagamento); só os textos mudam.
 function textsFor(entry: Entry) {
@@ -42,6 +43,18 @@ function textsFor(entry: Entry) {
   }
 }
 
+// Comprovante deste recebimento com o saldo de agora. Componente à parte para só carregar o cliente
+// nos recebimentos (a devolução não tem comprovante).
+function PaymentReceiptButton({ entry }: { entry: Entry }) {
+  const { client, isLoading, loadFailed } = useReceiptClient(entry)
+  const { paymentMethod } = entry
+  const prepare =
+    client && paymentMethod
+      ? () => preparePaymentReceipt({ amountCents: entry.amountCents, paymentMethod }, client)
+      : null
+  return <SendReceiptButton prepare={prepare} isLoading={isLoading} loadFailed={loadFailed} />
+}
+
 export function MoneyEntryDetails({ entry, onReversed }: { entry: Entry; onReversed: () => void }) {
   const texts = textsFor(entry)
   const method = entry.paymentMethod && `${texts.methodPrefix} ${paymentMethodLabels[entry.paymentMethod]}`
@@ -57,13 +70,7 @@ export function MoneyEntryDetails({ entry, onReversed }: { entry: Entry; onRever
           <span className="text-section font-bold">{formatCents(Math.abs(entry.amountCents))}</span>
         </Card>
 
-        {entry.type === "PAYMENT" && (
-          // O envio por WhatsApp é de uma etapa futura; por enquanto, o botão fica sem ação.
-          <Button aria-label="Enviar comprovante (em breve)">
-            <Send className="size-4.5" strokeWidth={1.5} aria-hidden />
-            Enviar Comprovante
-          </Button>
-        )}
+        {entry.type === "PAYMENT" && <PaymentReceiptButton entry={entry} />}
 
         <ReversalSection
           entry={entry}

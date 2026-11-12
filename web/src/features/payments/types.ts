@@ -26,4 +26,6 @@ export type PaymentConfirmation = {
   referenceDate: string
   balanceBeforeCents: number
   balance: Balance
+  // Para o comprovante no WhatsApp.
+  phone: string | null
 }

@@ -1,14 +1,15 @@
-import { Send } from "lucide-react"
 import { Navigate, useLocation, useNavigate } from "react-router"
 import { PageContainer } from "../../../components/layout/PageContainer"
 import { Avatar } from "../../../components/ui/Avatar"
 import { Button } from "../../../components/ui/Button"
 import { Card } from "../../../components/ui/Card"
+import { SendReceiptButton } from "../../../components/ui/SendReceiptButton"
 import { SuccessHeader } from "../../../components/ui/SuccessHeader"
 import { formatNumericDate } from "../../../lib/dates"
 import { formatCents } from "../../../lib/money"
 import { formatBalanceText, ReceiptBalance, ReceiptRow } from "../../clients/components/ReceiptParts"
 import { paymentMethodLabels } from "../../clients/paymentMethod"
+import { preparePaymentReceipt } from "../paymentReceiptMessage"
 import type { PaymentConfirmation } from "../types"
 
 export function PaymentConfirmedPage() {
@@ -40,11 +41,16 @@ export function PaymentConfirmedPage() {
           <ReceiptBalance balance={payment.balance} clientName={payment.clientName} />
         </Card>
 
-        {/* O envio por WhatsApp é de uma etapa futura; por enquanto, o botão fica sem ação. */}
-        <Button aria-label="Enviar comprovante (em breve)">
-          <Send className="size-4.5" strokeWidth={1.5} aria-hidden />
-          Enviar Comprovante
-        </Button>
+        {/* Abre o WhatsApp do cliente com o comprovante deste recebimento; a pessoa revisa e envia. */}
+        <SendReceiptButton
+          prepare={() =>
+            preparePaymentReceipt(payment, {
+              name: payment.clientName,
+              phone: payment.phone,
+              balance: payment.balance,
+            })
+          }
+        />
         <Button variant="outline" onClick={() => navigate("/pagamento", { replace: true })}>
           Registrar novo recebimento
         </Button>

@@ -85,6 +85,8 @@ export function SaleForm({ initial }: { initial: SaleDraftInitial }) {
         referenceDate: result.entry.referenceDate,
         balanceBeforeCents: result.effect?.balanceBefore.balanceCents ?? client.balance.balanceCents,
         balance: result.balance,
+        entry: result.entry,
+        phone: client.phone,
       }
       navigate("/venda/confirmada", { replace: true, state: confirmation })
     } catch (error) {

@@ -1,4 +1,3 @@
-import { Send } from "lucide-react"
 import { Navigate, useLocation, useNavigate } from "react-router"
 import { PageContainer } from "../../../components/layout/PageContainer"
 import { Avatar } from "../../../components/ui/Avatar"
@@ -8,6 +7,8 @@ import { SuccessHeader } from "../../../components/ui/SuccessHeader"
 import { formatNumericDate } from "../../../lib/dates"
 import { formatCents } from "../../../lib/money"
 import { formatBalanceText, ReceiptBalance, ReceiptRow } from "../../clients/components/ReceiptParts"
+import { SendReceiptButton } from "../../../components/ui/SendReceiptButton"
+import { preparePurchaseReceipt } from "../receiptMessage"
 import type { SaleConfirmation } from "../types"
 
 export function SaleConfirmedPage() {
@@ -38,11 +39,16 @@ export function SaleConfirmedPage() {
           <ReceiptBalance balance={sale.balance} clientName={sale.clientName} tinted />
         </Card>
 
-        {/* O envio por WhatsApp é de uma etapa futura; por enquanto, o botão fica sem ação. */}
-        <Button aria-label="Enviar comprovante (em breve)">
-          <Send className="size-4.5" strokeWidth={1.5} aria-hidden />
-          Enviar Comprovante
-        </Button>
+        {/* Abre o WhatsApp do cliente com o comprovante desta venda; a pessoa revisa e envia. */}
+        <SendReceiptButton
+          prepare={() =>
+            preparePurchaseReceipt(sale.entry, {
+              name: sale.clientName,
+              phone: sale.phone,
+              balance: sale.balance,
+            })
+          }
+        />
         <Button variant="outline" onClick={() => navigate("/venda", { replace: true })}>
           Registrar nova venda
         </Button>
